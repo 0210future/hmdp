@@ -2,14 +2,20 @@ package com.hmdp.controller;
 
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.Shop;
 import com.hmdp.service.IShopService;
 import com.hmdp.utils.SystemConstants;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
+
+import static com.hmdp.utils.RedisConstants.CACHE_SHOP_KEY;
 
 /**
  * <p>
@@ -25,16 +31,72 @@ public class ShopController {
 
     @Resource
     public IShopService shopService;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     /**
-     * 根据id查询商铺信息
+     * 根据商铺id查询商铺信息--缓存穿透--互斥锁解决
      * @param id 商铺id
-     * @return 商铺详情数据
+     * @return 商铺信息
      */
     @GetMapping("/{id}")
-    public Result queryShopById(@PathVariable("id") Long id) {
-        return Result.ok(shopService.getById(id));
+    public Result queryShopByIdWithMutex(@PathVariable("id") Long id) {
+        // 查询商铺详情先从缓存中获取
+        String key = CACHE_SHOP_KEY +":"+ id;
+        String shopJson = stringRedisTemplate.opsForValue().get(key);
+        // 判断商铺是否存在
+        if (StrUtil.isNotBlank(shopJson)) {
+            // 存在，直接返回
+            return Result.ok(JSONUtil.toBean(shopJson, Shop.class));
+        }
+        if(shopJson != null){
+            return Result.fail("商铺信息不存在");
+        }
+        Shop shop = null;
+        // 不存在，查询数据库
+        try {
+            // 加锁
+            boolean isLock = stringRedisTemplate.opsForValue().setIfAbsent(key, "1", 10, TimeUnit.SECONDS);
+            if (!isLock) {
+                // 加锁失败，休眠并重试
+                Thread.sleep(50);
+                return queryShopByIdWithMutex(id);
+            }
+            shop = shopService.getById(id);
+            // 判断商铺是否存在
+            if (shop == null) {
+                //將空值写入redis
+                stringRedisTemplate.opsForValue().set(key, "", 30, TimeUnit.MINUTES);
+                // 不存在，返回错误信息
+                return Result.fail("商铺不存在！");
+            }
+            // 存在，写入缓存
+            stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(shop), 30, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+            finally {
+                // 释放锁
+                stringRedisTemplate.delete(key);
+            }
+
+        // 返回数据
+        return Result.ok(shop);
     }
+  /*  @GetMapping("/{id}")
+    @Cacheable(value = "shopCache", key = "#id", unless = "#result == null")
+    public Result queryShopById(@PathVariable("id") Long id) {
+        // 查询数据库
+        Shop shop = shopService.getById(id);
+        // 判断商铺是否存在
+        if (shop == null) {
+            // 不存在，返回错误信息
+            return Result.fail("商铺不存在！");
+        }
+        // 返回数据
+        return Result.ok(shop);
+    }*/
+
 
     /**
      * 新增商铺信息
@@ -54,10 +116,17 @@ public class ShopController {
      * @param shop 商铺数据
      * @return 无
      */
+    @Transactional
     @PutMapping
     public Result updateShop(@RequestBody Shop shop) {
+        // 先判断商铺是否存在
+        if (shop.getId() == null) {
+            return Result.fail("商铺id不能为空！");
+        }
         // 写入数据库
         shopService.updateById(shop);
+        // 删除缓存
+        stringRedisTemplate.delete(CACHE_SHOP_KEY + shop.getId());
         return Result.ok();
     }
 
