@@ -18,12 +18,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hmdp.utils.RedisConstants.CACHE_SHOP_KEY;
 
 /**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author 虎哥
- * @since 2021-12-22
+ * 商铺管理
  */
 @RestController
 @RequestMapping("/shop")
