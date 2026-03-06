@@ -18,7 +18,7 @@ import javax.servlet.http.HttpSession;
 import static com.hmdp.utils.RedisConstants.LOGIN_USER_KEY;
 
 /**
- * 用户管理
+ * 鐢ㄦ埛绠＄悊
  */
 @Slf4j
 @RestController
@@ -34,25 +34,16 @@ public class UserController {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
-    /**
-     * 发送手机验证码
-     */
     @PostMapping("code")
     public Result sendCode(@RequestParam("phone") String phone, HttpSession session) {
         return userService.sendCode(phone, session);
     }
 
-    /**
-     * 登录功能
-     */
     @PostMapping("/login")
     public Result login(@RequestBody LoginFormDTO loginForm, HttpSession session) {
         return userService.login(loginForm, session);
     }
 
-    /**
-     * 登出功能
-     */
     @PostMapping("/logout")
     public Result logout(HttpServletRequest request) {
         String token = request.getHeader("authorization");
@@ -68,9 +59,18 @@ public class UserController {
         return Result.ok(UserHolder.getUser());
     }
 
+    @PostMapping("/sign")
+    public Result sign() {
+        return userService.sign();
+    }
+
+    @GetMapping("/sign/count")
+    public Result signCount() {
+        return userService.signCount();
+    }
+
     @GetMapping("/info/{id}")
     public Result info(@PathVariable("id") Long userId) {
-        // 查询详情
         UserInfo info = userInfoService.getById(userId);
         if (info == null) {
             return Result.ok();

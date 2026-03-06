@@ -1,15 +1,29 @@
 package com.hmdp.controller;
 
+import com.hmdp.dto.Result;
+import com.hmdp.entity.BlogComments;
+import com.hmdp.service.IBlogCommentsService;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.web.bind.annotation.RequestMapping;
+import javax.annotation.Resource;
 
-import org.springframework.web.bind.annotation.RestController;
-
-/**
- * 博文评论管理
- */
 @RestController
 @RequestMapping("/blog-comments")
 public class BlogCommentsController {
 
+    @Resource
+    private IBlogCommentsService blogCommentsService;
+
+    @PostMapping
+    public Result saveComment(@RequestBody BlogComments comment) {
+        return blogCommentsService.saveComment(comment);
+    }
+
+    @GetMapping("/of/blog")
+    public Result queryCommentsByBlogId(
+            @RequestParam("blogId") Long blogId,
+            @RequestParam(value = "current", defaultValue = "1") Integer current
+    ) {
+        return blogCommentsService.queryCommentsByBlogId(blogId, current);
+    }
 }
