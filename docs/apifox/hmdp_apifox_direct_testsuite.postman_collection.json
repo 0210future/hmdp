@@ -1,0 +1,1276 @@
+﻿{
+    "variable":  [
+                     {
+                         "key":  "baseUrl",
+                         "value":  "http://localhost:8081"
+                     },
+                     {
+                         "key":  "token",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "phone_valid",
+                         "value":  "13800138000"
+                     },
+                     {
+                         "key":  "phone_invalid",
+                         "value":  "123"
+                     },
+                     {
+                         "key":  "login_code",
+                         "value":  "123456"
+                     },
+                     {
+                         "key":  "user_id",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "target_user_id",
+                         "value":  "2"
+                     },
+                     {
+                         "key":  "other_user_id",
+                         "value":  "3"
+                     },
+                     {
+                         "key":  "blog_id",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "comment_id",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "feed_last_id",
+                         "value":  "9999999999999"
+                     },
+                     {
+                         "key":  "shop_id",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "shop_id_not_found",
+                         "value":  "999999"
+                     },
+                     {
+                         "key":  "geo_x",
+                         "value":  "120.149192"
+                     },
+                     {
+                         "key":  "geo_y",
+                         "value":  "30.316078"
+                     },
+                     {
+                         "key":  "voucher_id",
+                         "value":  "1"
+                     }
+                 ],
+    "info":  {
+                 "description":  "Direct runnable test suite for Apifox import (with assertions).",
+                 "name":  "HM-DianPing-Apifox-Direct-TestSuite",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+                 "_postman_id":  "f2d25c24-2536-4264-a9bb-111709863da2"
+             },
+    "item":  [
+                 {
+                     "name":  "01-User-Auth",
+                     "item":  [
+                                  {
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/code?phone={{phone_valid}}",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "U01 Send Code Valid",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/code?phone={{phone_invalid}}",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "U02 Send Code Invalid",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"phone\":\"{{phone_valid}}\",\"code\":\"{{login_code}}\"}",
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/login",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "type":  "text",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "U03 Login Valid Code (Capture Token)",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});",
+                                                                                    "var body2 = {};",
+                                                                                    "try { body2 = pm.response.json(); } catch (e) { body2 = {}; }",
+                                                                                    "if (body2 \u0026\u0026 body2.data) {",
+                                                                                    "  pm.collectionVariables.set(\u0027token\u0027, body2.data);",
+                                                                                    "}"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"phone\":\"{{phone_valid}}\",\"code\":\"000000\"}",
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/login",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "type":  "text",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "U04 Login Invalid Code",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/me",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "U05 Me With Token",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/me",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "U06 Me Without Token (401)",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 401\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(401);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/logout",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "U07 Logout",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/sign",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "U09 Sign",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/sign/count",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "U10 Sign Count",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "02-Follow",
+                     "item":  [
+                                  {
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/follow/{{target_user_id}}/true",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "F01 Follow User",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/follow/{{target_user_id}}/false",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "F03 Unfollow User",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/follow/or/not/{{target_user_id}}",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "F05 Is Follow",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/follow/common/{{other_user_id}}",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "F07 Common Followings",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "03-Blog-Feed",
+                     "item":  [
+                                  {
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"shopId\":1,\"title\":\"test blog\",\"content\":\"case content\",\"images\":\"/imgs/blogs/test.jpg\"}",
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/blog",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "type":  "text",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "B01 Create Blog",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/blog/{{blog_id}}",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "B03 Blog Detail",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/blog/like/{{blog_id}}",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "B04 Like Toggle",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/blog/likes/{{blog_id}}",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "B06 Blog Likes Top5",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/blog/of/user?id={{user_id}}\u0026current=1",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "B07 Blogs By User",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/blog/of/me?current=1",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "B08 My Blogs",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/blog/hot?current=1",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "B09 Hot Blogs",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/blog/of/follow?offset=0\u0026lastId={{feed_last_id}}",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "B10 Follow Feed Scroll",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "04-Comments",
+                     "item":  [
+                                  {
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"blogId\":{{blog_id}},\"content\":\"root comment\"}",
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/blog-comments",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "type":  "text",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "C01 Create Root Comment",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"blogId\":{{blog_id}},\"parentId\":{{comment_id}},\"answerId\":{{comment_id}},\"content\":\"reply comment\"}",
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/blog-comments",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "type":  "text",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "C02 Create Reply Comment",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/blog-comments/of/blog?blogId={{blog_id}}\u0026current=1",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "C03 Query Blog Comments",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "05-Shop-GEO",
+                     "item":  [
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/shop/{{shop_id}}",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "S01 Shop Detail",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/shop/{{shop_id_not_found}}",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "S03 Shop Not Found",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"id\":{{shop_id}},\"name\":\"shop-updated\"}",
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/shop",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "type":  "text",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "S04 Update Shop",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/shop/of/type?current=1\u0026typeId=1",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "S05 Shop By Type DB",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/shop/of/type?current=1\u0026typeId=1\u0026y={{geo_y}}\u0026x={{geo_x}}",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "S06 Shop By Type GEO",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/shop/of/name?name=shop\u0026current=1",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "S08 Shop Search By Name",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "06-ShopType",
+                     "item":  [
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/shop-type/list",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "T01 ShopType List",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/shop-type/list",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "T02 ShopType List Cache Hit",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "07-Voucher-Seckill",
+                     "item":  [
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/voucher/list/{{shop_id}}",
+                                                      "header":  [
+
+                                                                 ]
+                                                  },
+                                      "name":  "V03 Voucher List Of Shop",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "var body = {};",
+                                                                                    "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                                                                                    "pm.test(\u0027Business success is false\u0027, function () {",
+                                                                                    "  pm.expect(body.success).to.eql(false);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/voucher-order/seckill/{{voucher_id}}",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "authorization",
+                                                                         "type":  "text",
+                                                                         "value":  "{{token}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "V04 Seckill Order",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status code is 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ],
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 }
+             ]
+}
