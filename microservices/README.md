@@ -1,4 +1,4 @@
-﻿# HM-DianPing Microservices (Phase 1)
+# HM-DianPing Microservices (Phase 1)
 
 This directory contains a non-breaking microservice split skeleton. The original monolith under `/src` is untouched.
 

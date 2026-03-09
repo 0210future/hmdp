@@ -1,4 +1,4 @@
-﻿package com.hmdp.service.impl;
+package com.hmdp.service.impl;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;

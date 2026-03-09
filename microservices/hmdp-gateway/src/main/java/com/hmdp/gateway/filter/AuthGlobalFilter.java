@@ -1,4 +1,4 @@
-﻿package com.hmdp.gateway.filter;
+package com.hmdp.gateway.filter;
 
 import cn.hutool.core.util.StrUtil;
 import com.hmdp.utils.RedisConstants;

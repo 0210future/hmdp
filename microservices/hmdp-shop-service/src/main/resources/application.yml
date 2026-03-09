@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: ${SHOP_SERVICE_PORT:8083}
 
 spring:

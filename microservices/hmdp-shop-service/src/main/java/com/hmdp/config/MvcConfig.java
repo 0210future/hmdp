@@ -1,4 +1,4 @@
-﻿package com.hmdp.config;
+package com.hmdp.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;

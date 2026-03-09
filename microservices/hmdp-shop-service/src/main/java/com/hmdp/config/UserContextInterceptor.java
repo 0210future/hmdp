@@ -1,4 +1,4 @@
-﻿package com.hmdp.config;
+package com.hmdp.config;
 
 import com.hmdp.dto.UserDTO;
 import com.hmdp.utils.UserHolder;

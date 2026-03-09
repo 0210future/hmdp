@@ -1,4 +1,4 @@
-﻿package com.hmdp.user;
+package com.hmdp.user;
 
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
