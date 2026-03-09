@@ -1,0 +1,56 @@
+server:
+  port: 10010
+
+spring:
+  application:
+    name: hmdp-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+    gateway:
+      routes:
+        - id: user
+          uri: lb://hmdp-user-service
+          predicates:
+            - Path=/user/**
+        - id: shop
+          uri: lb://hmdp-shop-service
+          predicates:
+            - Path=/shop/**,/shop-type/**
+        - id: social
+          uri: lb://hmdp-social-service
+          predicates:
+            - Path=/blog/**,/follow/**,/blog-comments/**
+        - id: marketing
+          uri: lb://hmdp-marketing-service
+          predicates:
+            - Path=/voucher/**
+        - id: trade
+          uri: lb://hmdp-trade-service
+          predicates:
+            - Path=/voucher-order/**
+        - id: file
+          uri: lb://hmdp-file-service
+          predicates:
+            - Path=/upload/**
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    database: 0
+
+# Optional: if you externalize white-list config later
+hmdp:
+  auth:
+    white-list:
+      - /shop/**
+      - /shop-type/**
+      - /voucher/**
+      - /upload/**
+      - /blog/hot
+      - /blog/{id}
+      - /blog/of/user
+      - /blog/likes/{id}
+      - /blog-comments/of/blog
+      - /user/code
+      - /user/login
