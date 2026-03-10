@@ -2,14 +2,13 @@ package com.hmdp.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hmdp.client.UserClient;
 import com.hmdp.dto.Result;
 import com.hmdp.dto.UserDTO;
 import com.hmdp.entity.BlogComments;
-import com.hmdp.entity.User;
 import com.hmdp.mapper.BlogCommentsMapper;
 import com.hmdp.service.IBlogCommentsService;
 import com.hmdp.service.IBlogService;
-import com.hmdp.service.IUserService;
 import com.hmdp.utils.SystemConstants;
 import com.hmdp.utils.UserHolder;
 import org.springframework.stereotype.Service;
@@ -21,7 +20,7 @@ import java.util.List;
 public class BlogCommentsServiceImpl extends ServiceImpl<BlogCommentsMapper, BlogComments> implements IBlogCommentsService {
 
     @Resource
-    private IUserService userService;
+    private UserClient userClient;
 
     @Resource
     private IBlogService blogService;
@@ -57,7 +56,7 @@ public class BlogCommentsServiceImpl extends ServiceImpl<BlogCommentsMapper, Blo
 
         List<BlogComments> records = page.getRecords();
         for (BlogComments comment : records) {
-            User user = userService.getById(comment.getUserId());
+            UserDTO user = userClient.getUser(comment.getUserId());
             if (user != null) {
                 comment.setName(user.getNickName());
                 comment.setIcon(user.getIcon());

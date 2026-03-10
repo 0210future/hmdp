@@ -3,13 +3,12 @@ package com.hmdp.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hmdp.client.UserClient;
 import com.hmdp.dto.Result;
 import com.hmdp.dto.UserDTO;
 import com.hmdp.entity.Follow;
-import com.hmdp.entity.User;
 import com.hmdp.mapper.FollowMapper;
 import com.hmdp.service.IFollowService;
-import com.hmdp.service.IUserService;
 import com.hmdp.utils.UserHolder;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -29,7 +28,7 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     private StringRedisTemplate stringRedisTemplate;
 
     @Resource
-    private IUserService userService;
+    private UserClient userClient;
 
     @Override
     public Result follow(Long followUserId, Boolean isFollow) {
@@ -89,14 +88,19 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
         }
 
         List<Long> ids = intersect.stream().map(Long::valueOf).collect(Collectors.toList());
-        List<UserDTO> users = userService.listByIds(ids).stream()
-                .map(this::toUserDTO)
-                .collect(Collectors.toList());
+        List<UserDTO> users = userClient.listByIds(ids);
+        if (users == null) {
+            users = Collections.emptyList();
+        }
         return Result.ok(users);
     }
 
-    private UserDTO toUserDTO(User user) {
-        return BeanUtil.copyProperties(user, UserDTO.class);
+    @Override
+    public List<Long> queryFollowers(Long followUserId) {
+        return query().eq("follow_user_id", followUserId).list().stream()
+                .map(Follow::getUserId)
+                .collect(Collectors.toList());
     }
 }
+
 

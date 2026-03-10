@@ -30,6 +30,14 @@ spring:
           uri: ${FOLLOW_SERVICE_URI:http://127.0.0.1:8085}
           predicates:
             - Path=/follow/**
+        - id: voucher-service
+          uri: ${VOUCHER_SERVICE_URI:http://127.0.0.1:8086}
+          predicates:
+            - Path=/voucher/**
+        - id: order-service
+          uri: ${ORDER_SERVICE_URI:http://127.0.0.1:8087}
+          predicates:
+            - Path=/voucher-order/**
   redis:
     host: ${REDIS_HOST:127.0.0.1}
     port: ${REDIS_PORT:6379}
@@ -45,3 +53,8 @@ spring:
 logging:
   level:
     com.hmdp: info
+
+auth:
+  mode: ${AUTH_MODE:jwt}
+  jwt:
+    secret: ${JWT_SECRET:hmdp-secret-2026}

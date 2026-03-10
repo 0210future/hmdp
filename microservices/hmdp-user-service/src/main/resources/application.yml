@@ -37,3 +37,10 @@ mybatis-plus:
 logging:
   level:
     com.hmdp: info
+
+auth:
+  mode: ${AUTH_MODE:jwt}
+  code-store: ${AUTH_CODE_STORE:memory}
+  jwt:
+    secret: ${JWT_SECRET:hmdp-secret-2026}
+    ttl-minutes: ${JWT_TTL_MINUTES:120}

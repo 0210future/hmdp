@@ -23,6 +23,8 @@
         <module>hmdp-shop-service</module>
         <module>hmdp-blog-service</module>
         <module>hmdp-follow-service</module>
+        <module>hmdp-voucher-service</module>
+        <module>hmdp-order-service</module>
     </modules>
 
     <properties>
@@ -63,3 +65,4 @@
         </dependencies>
     </dependencyManagement>
 </project>
+

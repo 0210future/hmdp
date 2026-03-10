@@ -10,9 +10,12 @@ import com.hmdp.dto.UserDTO;
 import com.hmdp.entity.User;
 import com.hmdp.mapper.UserMapper;
 import com.hmdp.service.IUserService;
+import com.hmdp.support.LocalCodeStore;
+import com.hmdp.utils.JwtUtils;
 import com.hmdp.utils.RegexUtils;
 import com.hmdp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -41,6 +44,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Resource
+    private LocalCodeStore localCodeStore;
+
+    @Value("${auth.mode:jwt}")
+    private String authMode;
+
+    @Value("${auth.code-store:memory}")
+    private String codeStore;
+
+    @Value("${auth.jwt.secret:hmdp-secret-2026}")
+    private String jwtSecret;
+
+    @Value("${auth.jwt.ttl-minutes:120}")
+    private long jwtTtlMinutes;
+
     @Override
     public Result sendCode(String phone, HttpSession session) {
         if (RegexUtils.isPhoneInvalid(phone)) {
@@ -48,7 +66,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
 
         String code = RandomUtil.randomNumbers(6);
-        stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY + phone, code, LOGIN_CODE_TTL, TimeUnit.MINUTES);
+        if (useMemoryCodeStore()) {
+            localCodeStore.store(phone, code, LOGIN_CODE_TTL);
+        } else {
+            stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY + phone, code, LOGIN_CODE_TTL, TimeUnit.MINUTES);
+        }
         log.debug("send sms code: {}", code);
         return Result.ok();
     }
@@ -60,7 +82,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             return Result.fail("Invalid phone number");
         }
 
-        String cacheCode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY + phone);
+        String cacheCode = useMemoryCodeStore()
+                ? localCodeStore.get(phone)
+                : stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY + phone);
         String code = loginForm.getCode();
         if (cacheCode == null || !cacheCode.equals(code)) {
             return Result.fail("Invalid verification code");
@@ -71,8 +95,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             user = createUserWithPhone(phone);
         }
 
-        String token = UUID.randomUUID().toString();
         UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
+        if (isJwtMode()) {
+            Map<String, Object> claims = new HashMap<>();
+            claims.put("id", userDTO.getId());
+            claims.put("nickName", userDTO.getNickName());
+            claims.put("icon", userDTO.getIcon());
+            String token = JwtUtils.createToken(claims, jwtSecret, TimeUnit.MINUTES.toSeconds(jwtTtlMinutes));
+            return Result.ok(token);
+        }
+
+        String token = UUID.randomUUID().toString();
         Map<String, Object> userMap = BeanUtil.beanToMap(
                 userDTO,
                 new HashMap<>(),
@@ -144,5 +177,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         user.setNickName(USER_NICK_NAME_PREFIX + RandomUtil.randomString(10));
         save(user);
         return user;
+    }
+
+    private boolean useMemoryCodeStore() {
+        return "memory".equalsIgnoreCase(codeStore) || isJwtMode();
+    }
+
+    private boolean isJwtMode() {
+        return "jwt".equalsIgnoreCase(authMode);
     }
 }

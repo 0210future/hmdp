@@ -1,4 +1,4 @@
-# HM-DianPing Microservices (Phase 1)
+# HM-DianPing Microservices
 
 This directory contains a non-breaking microservice split skeleton. The original monolith under `/src` is untouched.
 
@@ -8,12 +8,14 @@ This directory contains a non-breaking microservice split skeleton. The original
 - `hmdp-gateway`: API gateway, route forwarding, token auth and user header propagation.
 - `hmdp-user-service`: user/login/sign related APIs.
 - `hmdp-shop-service`: shop/shop-type APIs, cache and GEO query logic.
-- `hmdp-blog-service`: blog + blog comments APIs.
-- `hmdp-follow-service`: follow APIs.
+- `hmdp-blog-service`: blog + blog comments APIs (uses Feign for user/follow).
+- `hmdp-follow-service`: follow APIs (uses Feign for user).
+- `hmdp-voucher-service`: voucher + seckill voucher APIs.
+- `hmdp-order-service`: voucher order APIs (uses Feign for voucher).
 
 ## Scope in this phase
 
-- Included: gateway + user + shop + blog + follow core APIs.
+- Included: gateway + user + shop + blog + follow + voucher + order core APIs.
 - Excluded intentionally: monitoring stack, log platform, tracing platform.
 - Database schema: reuse original `hmdp` schema with minimal/no changes.
 
@@ -45,6 +47,8 @@ You can override defaults in each module `application.yml`.
 - `SHOP_SERVICE_PORT` (default `8083`)
 - `BLOG_SERVICE_PORT` (default `8084`)
 - `FOLLOW_SERVICE_PORT` (default `8085`)
+- `VOUCHER_SERVICE_PORT` (default `8086`)
+- `ORDER_SERVICE_PORT` (default `8087`)
 
 ## Startup order
 
@@ -53,7 +57,9 @@ You can override defaults in each module `application.yml`.
 3. Start `hmdp-shop-service`
 4. Start `hmdp-blog-service`
 5. Start `hmdp-follow-service`
-6. Start `hmdp-gateway`
+6. Start `hmdp-voucher-service`
+7. Start `hmdp-order-service`
+8. Start `hmdp-gateway`
 
 If you enable Nacos, start it before the services.
 
@@ -98,6 +104,17 @@ mvn -f microservices/pom.xml clean package -DskipTests
   - `PUT /follow/{id}/{isFollow}`
   - `GET /follow/or/not/{id}`
   - `GET /follow/common/{id}`
+  - `GET /follow/of/user/{id}`
+
+- Voucher service:
+  - `POST /voucher`
+  - `POST /voucher/seckill`
+  - `GET /voucher/list/{shopId}`
+  - `GET /voucher/seckill/{id}`
+  - `POST /voucher/seckill/{id}/stock/decrease`
+
+- Order service:
+  - `POST /voucher-order/seckill/{id}`
 
 ## Auth behavior
 
@@ -106,6 +123,7 @@ mvn -f microservices/pom.xml clean package -DskipTests
   - `/shop/**`, `/shop-type/**`
   - `/blog/hot`, `/blog/of/user`, `/blog/likes/**`, `/blog/{id}`
   - `/blog-comments/of/blog`
+  - `/voucher/list/**`
 - Non-whitelisted paths require `Authorization` token.
 - Gateway validates Redis key `login:token:{token}` and injects:
   - `X-User-Id`
@@ -115,5 +133,5 @@ mvn -f microservices/pom.xml clean package -DskipTests
 ## IDEA Import
 
 - Open Maven tool window and ensure both `pom.xml` and `microservices/pom.xml` are imported.
-- Use the provided Run Configurations: `HmdpGateway`, `HmdpUserService`, `HmdpShopService`, `HmdpBlogService`, `HmdpFollowService`.
+- Use the provided Run Configurations: `HmdpGateway`, `HmdpUserService`, `HmdpShopService`, `HmdpBlogService`, `HmdpFollowService`, `HmdpVoucherService`, `HmdpOrderService`.
 - If you want to enable Nacos registration, set `NACOS_DISCOVERY_ENABLED=true` and `NACOS_REGISTER_ENABLED=true`.

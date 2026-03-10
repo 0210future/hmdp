@@ -5,10 +5,8 @@ import com.hmdp.service.IFollowService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.List;
 
-/**
- * 鍏虫敞绠＄悊
- */
 @RestController
 @RequestMapping("/follow")
 public class FollowController {
@@ -29,5 +27,10 @@ public class FollowController {
     @GetMapping("/common/{id}")
     public Result followCommons(@PathVariable("id") Long otherUserId) {
         return followService.followCommons(otherUserId);
+    }
+
+    @GetMapping("/of/user/{id}")
+    public List<Long> queryFollowers(@PathVariable("id") Long userId) {
+        return followService.queryFollowers(userId);
     }
 }

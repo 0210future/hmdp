@@ -21,41 +21,56 @@ import java.time.LocalDateTime;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("tb_user")
-public class User implements Serializable {
+@TableName("tb_voucher_order")
+public class VoucherOrder implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
      * 主键
      */
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "id", type = IdType.INPUT)
     private Long id;
 
     /**
-     * 手机号码
+     * 下单的用户id
      */
-    private String phone;
+    private Long userId;
 
     /**
-     * 密码，加密存储
+     * 购买的代金券id
      */
-    private String password;
+    private Long voucherId;
 
     /**
-     * 昵称，默认是随机字符
+     * 支付方式 1：余额支付；2：支付宝；3：微信
      */
-    private String nickName;
+    private Integer payType;
 
     /**
-     * 用户头像
+     * 订单状态，1：未支付；2：已支付；3：已核销；4：已取消；5：退款中；6：已退款
      */
-    private String icon = "";
+    private Integer status;
 
     /**
-     * 创建时间
+     * 下单时间
      */
     private LocalDateTime createTime;
+
+    /**
+     * 支付时间
+     */
+    private LocalDateTime payTime;
+
+    /**
+     * 核销时间
+     */
+    private LocalDateTime useTime;
+
+    /**
+     * 退款时间
+     */
+    private LocalDateTime refundTime;
 
     /**
      * 更新时间

@@ -1,17 +1,14 @@
 package com.hmdp.controller;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.hmdp.client.FollowClient;
+import com.hmdp.client.UserClient;
 import com.hmdp.dto.Result;
 import com.hmdp.dto.ScrollResult;
 import com.hmdp.dto.UserDTO;
 import com.hmdp.entity.Blog;
-import com.hmdp.entity.Follow;
-import com.hmdp.entity.User;
 import com.hmdp.service.IBlogService;
-import com.hmdp.service.IFollowService;
-import com.hmdp.service.IUserService;
 import com.hmdp.utils.UserHolder;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
@@ -39,10 +36,10 @@ public class BlogController {
     private IBlogService blogService;
 
     @Resource
-    private IUserService userService;
+    private UserClient userClient;
 
     @Resource
-    private IFollowService followService;
+    private FollowClient followClient;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -59,13 +56,13 @@ public class BlogController {
             return Result.fail("Create blog failed");
         }
 
-        List<Follow> followers = followService.query()
-                .eq("follow_user_id", user.getId())
-                .list();
-        long now = System.currentTimeMillis();
-        for (Follow follower : followers) {
-            String key = FEED_KEY + follower.getUserId();
-            stringRedisTemplate.opsForZSet().add(key, blog.getId().toString(), now);
+        List<Long> followers = followClient.queryFollowers(user.getId());
+        if (followers != null && !followers.isEmpty()) {
+            long now = System.currentTimeMillis();
+            for (Long followerId : followers) {
+                String key = FEED_KEY + followerId;
+                stringRedisTemplate.opsForZSet().add(key, blog.getId().toString(), now);
+            }
         }
         return Result.ok(blog.getId());
     }
@@ -115,10 +112,13 @@ public class BlogController {
         }
 
         List<Long> ids = top5.stream().map(Long::valueOf).collect(Collectors.toList());
-        List<User> users = userService.listByIds(ids);
+        List<UserDTO> users = userClient.listByIds(ids);
+        if (users == null) {
+            users = Collections.emptyList();
+        }
         Map<Long, UserDTO> dtoMap = new HashMap<>(users.size());
-        for (User user : users) {
-            dtoMap.put(user.getId(), BeanUtil.copyProperties(user, UserDTO.class));
+        for (UserDTO user : users) {
+            dtoMap.put(user.getId(), user);
         }
 
         List<UserDTO> result = new ArrayList<>(ids.size());
@@ -237,7 +237,7 @@ public class BlogController {
     }
 
     private void fillBlogUser(Blog blog) {
-        User user = userService.getById(blog.getUserId());
+        UserDTO user = userClient.getUser(blog.getUserId());
         if (user == null) {
             return;
         }
@@ -256,3 +256,5 @@ public class BlogController {
         blog.setIsLike(score != null);
     }
 }
+
+
