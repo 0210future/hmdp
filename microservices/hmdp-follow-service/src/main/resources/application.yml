@@ -1,9 +1,9 @@
 server:
-  port: ${SHOP_SERVICE_PORT:8083}
+  port: ${FOLLOW_SERVICE_PORT:8085}
 
 spring:
   application:
-    name: hmdp-shop-service
+    name: hmdp-follow-service
   cloud:
     nacos:
       discovery:

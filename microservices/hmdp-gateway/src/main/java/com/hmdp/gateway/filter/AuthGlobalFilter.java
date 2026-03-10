@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 @Component
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
@@ -27,8 +28,14 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             "/user/logout",
             "/user/info/",
             "/shop/",
-            "/shop-type/"
+            "/shop-type/",
+            "/blog/hot",
+            "/blog/of/user",
+            "/blog/likes/",
+            "/blog-comments/of/blog"
     );
+
+    private static final Pattern BLOG_DETAIL_PATTERN = Pattern.compile("^/blog/\\d+$");
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -74,6 +81,9 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isWhitePath(String path) {
+        if (BLOG_DETAIL_PATTERN.matcher(path).matches()) {
+            return true;
+        }
         for (String prefix : WHITE_PATH_PREFIX) {
             if (path.startsWith(prefix)) {
                 return true;
@@ -87,4 +97,3 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         return exchange.getResponse().setComplete();
     }
 }
-

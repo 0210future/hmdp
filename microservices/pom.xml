@@ -21,6 +21,8 @@
         <module>hmdp-gateway</module>
         <module>hmdp-user-service</module>
         <module>hmdp-shop-service</module>
+        <module>hmdp-blog-service</module>
+        <module>hmdp-follow-service</module>
     </modules>
 
     <properties>

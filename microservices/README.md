@@ -1,4 +1,4 @@
-﻿# HM-DianPing Microservices (Phase 1)
+# HM-DianPing Microservices (Phase 1)
 
 This directory contains a non-breaking microservice split skeleton. The original monolith under `/src` is untouched.
 
@@ -8,10 +8,12 @@ This directory contains a non-breaking microservice split skeleton. The original
 - `hmdp-gateway`: API gateway, route forwarding, token auth and user header propagation.
 - `hmdp-user-service`: user/login/sign related APIs.
 - `hmdp-shop-service`: shop/shop-type APIs, cache and GEO query logic.
+- `hmdp-blog-service`: blog + blog comments APIs.
+- `hmdp-follow-service`: follow APIs.
 
 ## Scope in this phase
 
-- Included: gateway + user + shop core APIs.
+- Included: gateway + user + shop + blog + follow core APIs.
 - Excluded intentionally: monitoring stack, log platform, tracing platform.
 - Database schema: reuse original `hmdp` schema with minimal/no changes.
 
@@ -21,13 +23,15 @@ This directory contains a non-breaking microservice split skeleton. The original
 - Maven 3.8+
 - MySQL 5.7/8.0 (database `hmdp`)
 - Redis 6+
-- Nacos 2.x
+- Nacos 2.x (optional; defaults to disabled)
 
 ## Environment variables
 
 You can override defaults in each module `application.yml`.
 
 - `NACOS_ADDR` (default `127.0.0.1:8848`)
+- `NACOS_DISCOVERY_ENABLED` (default `false`)
+- `NACOS_REGISTER_ENABLED` (default `false`)
 - `MYSQL_HOST` (default `127.0.0.1`)
 - `MYSQL_PORT` (default `3306`)
 - `MYSQL_USERNAME` (default `root`)
@@ -39,14 +43,19 @@ You can override defaults in each module `application.yml`.
 - `GATEWAY_PORT` (default `8080`)
 - `USER_SERVICE_PORT` (default `8082`)
 - `SHOP_SERVICE_PORT` (default `8083`)
+- `BLOG_SERVICE_PORT` (default `8084`)
+- `FOLLOW_SERVICE_PORT` (default `8085`)
 
 ## Startup order
 
-1. Start Nacos
-2. Start MySQL and Redis
-3. Start `hmdp-user-service`
-4. Start `hmdp-shop-service`
-5. Start `hmdp-gateway`
+1. Start MySQL and Redis
+2. Start `hmdp-user-service`
+3. Start `hmdp-shop-service`
+4. Start `hmdp-blog-service`
+5. Start `hmdp-follow-service`
+6. Start `hmdp-gateway`
+
+If you enable Nacos, start it before the services.
 
 ## Build
 
@@ -73,23 +82,38 @@ mvn -f microservices/pom.xml clean package -DskipTests
   - `PUT /shop`
   - `GET /shop-type/list`
 
+- Blog service:
+  - `POST /blog`
+  - `GET /blog/{id}`
+  - `PUT /blog/like/{id}`
+  - `GET /blog/likes/{id}`
+  - `GET /blog/of/user`
+  - `GET /blog/of/me`
+  - `GET /blog/hot`
+  - `GET /blog/of/follow`
+  - `POST /blog-comments`
+  - `GET /blog-comments/of/blog`
+
+- Follow service:
+  - `PUT /follow/{id}/{isFollow}`
+  - `GET /follow/or/not/{id}`
+  - `GET /follow/common/{id}`
+
 ## Auth behavior
 
-- Gateway whitelist: `/user/code`, `/user/login`, `/user/logout`, `/user/info/**`, `/shop/**`, `/shop-type/**`
+- Gateway whitelist:
+  - `/user/code`, `/user/login`, `/user/logout`, `/user/info/**`
+  - `/shop/**`, `/shop-type/**`
+  - `/blog/hot`, `/blog/of/user`, `/blog/likes/**`, `/blog/{id}`
+  - `/blog-comments/of/blog`
 - Non-whitelisted paths require `Authorization` token.
 - Gateway validates Redis key `login:token:{token}` and injects:
   - `X-User-Id`
   - `X-User-NickName`
   - `X-User-Icon`
 
-## Notes
-
-- In this environment Maven executable is missing, so I could not run a full compile here.
-- The implementation is structured to be runnable in a standard local Java+Maven setup.
-
-
 ## IDEA Import
 
 - Open Maven tool window and ensure both `pom.xml` and `microservices/pom.xml` are imported.
-- Use the provided Run Configurations: `HmdpGateway`, `HmdpUserService`, `HmdpShopService`.
+- Use the provided Run Configurations: `HmdpGateway`, `HmdpUserService`, `HmdpShopService`, `HmdpBlogService`, `HmdpFollowService`.
 - If you want to enable Nacos registration, set `NACOS_DISCOVERY_ENABLED=true` and `NACOS_REGISTER_ENABLED=true`.
