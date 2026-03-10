@@ -1,4 +1,4 @@
-# HM-DianPing Microservices (Phase 1)
+﻿# HM-DianPing Microservices (Phase 1)
 
 This directory contains a non-breaking microservice split skeleton. The original monolith under `/src` is untouched.
 
@@ -87,3 +87,9 @@ mvn -f microservices/pom.xml clean package -DskipTests
 - In this environment Maven executable is missing, so I could not run a full compile here.
 - The implementation is structured to be runnable in a standard local Java+Maven setup.
 
+
+## IDEA Import
+
+- Open Maven tool window and ensure both `pom.xml` and `microservices/pom.xml` are imported.
+- Use the provided Run Configurations: `HmdpGateway`, `HmdpUserService`, `HmdpShopService`.
+- If you want to enable Nacos registration, set `NACOS_DISCOVERY_ENABLED=true` and `NACOS_REGISTER_ENABLED=true`.
