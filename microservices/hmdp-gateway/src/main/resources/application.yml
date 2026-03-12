@@ -9,52 +9,13 @@ spring:
   cloud:
     nacos:
       discovery:
-        enabled: ${NACOS_DISCOVERY_ENABLED:false}
-        register-enabled: ${NACOS_REGISTER_ENABLED:false}
-        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
-    gateway:
-      routes:
-        - id: user-service
-          uri: ${USER_SERVICE_URI:http://127.0.0.1:8082}
-          predicates:
-            - Path=/user/**
-        - id: shop-service
-          uri: ${SHOP_SERVICE_URI:http://127.0.0.1:8083}
-          predicates:
-            - Path=/shop/**,/shop-type/**
-        - id: blog-service
-          uri: ${BLOG_SERVICE_URI:http://127.0.0.1:8084}
-          predicates:
-            - Path=/blog/**,/blog-comments/**
-        - id: follow-service
-          uri: ${FOLLOW_SERVICE_URI:http://127.0.0.1:8085}
-          predicates:
-            - Path=/follow/**
-        - id: voucher-service
-          uri: ${VOUCHER_SERVICE_URI:http://127.0.0.1:8086}
-          predicates:
-            - Path=/voucher/**
-        - id: order-service
-          uri: ${ORDER_SERVICE_URI:http://127.0.0.1:8087}
-          predicates:
-            - Path=/voucher-order/**
-  redis:
-    host: ${REDIS_HOST:127.0.0.1}
-    port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD:}
-    database: ${REDIS_DB:0}
-    lettuce:
-      pool:
-        max-active: 10
-        max-idle: 10
-        min-idle: 1
-        time-between-eviction-runs: 10s
-
-logging:
-  level:
-    com.hmdp: info
-
-auth:
-  mode: ${AUTH_MODE:jwt}
-  jwt:
-    secret: ${JWT_SECRET:hmdp-secret-2026}
+        enabled: ${NACOS_DISCOVERY_ENABLED:true}
+        register-enabled: ${NACOS_REGISTER_ENABLED:true}
+        server-addr: ${NACOS_ADDR:42.193.185.40:8848}
+      config:
+        enabled: true
+        server-addr: ${NACOS_ADDR:42.193.185.40:8848}
+        file-extension: yaml
+        shared-configs:
+          - data-id: hmdp-gateway.yaml
+            refresh: true
