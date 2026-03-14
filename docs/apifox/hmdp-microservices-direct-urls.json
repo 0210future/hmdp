@@ -1,0 +1,640 @@
+{
+    "info": {
+        "name": "HM-DianPing-Microservices-Complete",
+        "description": "完整的美团点评微服务项目测试用例 - 使用服务前置 URL 管理多端口",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "01-用户服务 (User Service:8082)",
+            "item": [
+                {
+                    "name": "获取用户信息",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8082/user/info/{{user_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true\", function () { pm.expect(json.success).to.eql(true); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "获取用户基本信息",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8082/user/basic/{{user_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"返回用户数据\", function () { pm.expect(json.nickName).to.exist; });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "发送验证码",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "phone",
+                                    "value": "13800138000"
+                                }
+                            ]
+                        },
+                        "url": "http://localhost:8082/user/code"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true\", function () { pm.expect(json.success).to.eql(true); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "登录",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"phone\": \"13800138000\",\n  \"code\": \"123456\"\n}"
+                        },
+                        "url": "http://localhost:8082/user/login"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true\", function () { pm.expect(json.success).to.eql(true); });",
+                                    "if (json.data) { pm.collectionVariables.set(\"token\", json.data); }"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "获取当前用户信息",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "http://localhost:8082/user/me"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "02-商户服务 (Shop Service:8083)",
+            "item": [
+                {
+                    "name": "根据类型查询商户列表",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8083/shop/of/type?typeId=1&current=1"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true\", function () { pm.expect(json.success).to.eql(true); });",
+                                    "pm.test(\"返回商户列表\", function () { pm.expect(json.data).to.be.an('array'); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "根据 ID 查询商户",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8083/shop/{{shop_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "根据名称查询商户",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8083/shop/of/name?name=&current=1"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true\", function () { pm.expect(json.success).to.eql(true); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "查询商户类型列表",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8083/shop-type/list"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true\", function () { pm.expect(json.success).to.eql(true); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "03-博客服务 (Blog Service:8084)",
+            "item": [
+                {
+                    "name": "查询热门博客",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8084/blog/hot?current=1"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true\", function () { pm.expect(json.success).to.eql(true); });",
+                                    "pm.test(\"返回博客列表\", function () { pm.expect(json.data).to.be.an('array'); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "根据 ID 查询博客",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8084/blog/{{blog_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "查询博客点赞用户",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8084/blog/likes/{{blog_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true\", function () { pm.expect(json.success).to.eql(true); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "查询用户的博客",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8084/blog/of/user?id={{user_id}}&current=1"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true\", function () { pm.expect(json.success).to.eql(true); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "04-关注服务 (Follow Service:8085)",
+            "item": [
+                {
+                    "name": "检查是否关注",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8085/follow/or/not/{{user_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"需要认证\", function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "查询共同关注",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8085/follow/common/{{user_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"需要认证\", function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "查询用户的粉丝列表",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8085/follow/of/user/{{user_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "05-优惠券服务 (Voucher Service:8086)",
+            "item": [
+                {
+                    "name": "查询商户的优惠券列表",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8086/voucher/list/{{shop_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true\", function () { pm.expect(json.success).to.eql(true); });",
+                                    "pm.test(\"返回优惠券列表\", function () { pm.expect(json.data).to.be.an('array'); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "查询秒杀优惠券详情",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8086/voucher/seckill/{{voucher_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true\", function () { pm.expect(json.success).to.eql(true); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "减少秒杀库存 (测试用)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "http://localhost:8086/voucher/seckill/{{voucher_id}}/stock/decrease"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "06-订单服务 (Order Service:8087)",
+            "item": [
+                {
+                    "name": "秒杀下单",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": ""
+                        },
+                        "url": "http://localhost:8087/voucher-order/seckill/{{voucher_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test(\"success 为 true 或返回错误信息\", function () { pm.expect(json.success).to.be.oneOf([true, false]); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "健康检查",
+            "item": [
+                {
+                    "name": "用户服务健康检查",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8082/actuator"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "商户服务健康检查",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8083/actuator"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "博客服务健康检查",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8084/actuator"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "关注服务健康检查",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8085/actuator"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "优惠券服务健康检查",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8086/actuator"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "订单服务健康检查",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://localhost:8087/actuator"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"状态码 200\", function () { pm.response.to.have.status(200); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "user_id",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "shop_id",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "blog_id",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "voucher_id",
+            "value": "1",
+            "type": "string"
+        }
+    ]
+}
