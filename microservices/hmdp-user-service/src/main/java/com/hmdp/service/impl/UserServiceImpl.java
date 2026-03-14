@@ -59,20 +59,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Value("${auth.jwt.ttl-minutes:120}")
     private long jwtTtlMinutes;
 
+    /**
+     * 发送登录验证码到用户手机
+     * 生成 6 位随机数字验证码，并存储到 Redis 或内存中，有效期为 LOGIN_CODE_TTL 分钟
+     *
+     * @param phone  用户手机号，需要先通过格式验证
+     * @param session HTTP 会话对象，用于后续登录验证时校验验证码
+     * @return Result 操作结果，手机号格式错误时返回失败信息，成功时返回空结果
+     */
     @Override
     public Result sendCode(String phone, HttpSession session) {
+        // 验证手机号格式是否合法
         if (RegexUtils.isPhoneInvalid(phone)) {
             return Result.fail("Invalid phone number");
         }
 
+        // 生成 6 位随机数字验证码
         String code = RandomUtil.randomNumbers(6);
+        
+        // 根据配置选择验证码存储方式：内存存储或 Redis 存储
         if (useMemoryCodeStore()) {
             localCodeStore.store(phone, code, LOGIN_CODE_TTL);
         } else {
             stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY + phone, code, LOGIN_CODE_TTL, TimeUnit.MINUTES);
         }
         log.debug("send sms code: {}", code);
-        return Result.ok();
+        return Result.ok(code);
     }
 
     @Override
