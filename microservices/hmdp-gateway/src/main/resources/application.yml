@@ -9,13 +9,20 @@ spring:
   cloud:
     nacos:
       discovery:
-        enabled: ${NACOS_DISCOVERY_ENABLED:true}
-        register-enabled: ${NACOS_REGISTER_ENABLED:true}
-        server-addr: ${NACOS_ADDR:42.193.185.40:8848}
+        enabled: false
+        register-enabled: false
       config:
-        enabled: true
-        server-addr: ${NACOS_ADDR:42.193.185.40:8848}
-        file-extension: yaml
-        shared-configs:
-          - data-id: hmdp-gateway.yaml
-            refresh: true
+        enabled: false
+    gateway:
+      routes:
+        - id: user
+          uri: http://127.0.0.1:8082
+          predicates:
+            - Path=/user/**
+  redis:
+    host: 42.193.185.40
+    port: 6379
+    database: 0
+
+auth:
+  mode: redis
