@@ -41,15 +41,23 @@ public class UserLoginTest extends BaseTest {
             .response();
         
         // 验证响应
-        assertThat(response.jsonPath().getBoolean("success")).isTrue();
+        assertThat(response.jsonPath().getBoolean("success"))
+            .as("发送验证码接口返回失败: " + response.jsonPath().getString("errorMsg"))
+            .isTrue();
+        
+        // 等待一下确保Redis写入完成
+        sleep(500);
         
         // 验证Redis中存在验证码
         String code = RedisUtil.getLoginCode(TEST_PHONE);
-        assertThat(code).isNotNull();
+        assertThat(code)
+            .as("Redis中未找到验证码，请检查：\n1. Redis服务是否正常运行（42.193.185.40:6379）\n2. 后端服务是否正确将验证码写入Redis\n3. Redis key格式是否为 'login:code:' + phone")
+            .isNotNull();
         assertThat(code).hasSize(6);
         assertThat(code).matches("\\d{6}");
         
         verificationCode = code;
+        System.out.println("成功获取验证码: " + code);
     }
 
     @Test

@@ -36,3 +36,4 @@ application.yml
 application.yaml
 application-dev.yml
 application-prod.yml
+/hmdp-api-tests/allure-results/

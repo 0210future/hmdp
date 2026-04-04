@@ -20,7 +20,7 @@ spring:
           predicates:
             - Path=/user/**
   redis:
-    host: 42.193.185.40
+    host: 127.0.0.1
     port: 6379
     database: 0
 

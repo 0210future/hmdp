@@ -17,7 +17,7 @@ spring:
     hikari:
       initialization-fail-timeout: -1
   redis:
-    host: 42.193.185.40
+    host: 127.0.0.1
     port: 6379
     password:
     database: 0

@@ -4,6 +4,8 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import java.util.Set;
+
 /**
  * Redis工具类
  */
@@ -34,7 +36,31 @@ public class RedisUtil {
      */
     public static String getLoginCode(String phone) {
         try (Jedis jedis = getJedis()) {
-            return jedis.get("login:code:" + phone);
+            String key = "login:code:" + phone;
+            String value = jedis.get(key);
+            System.out.println("[RedisUtil] 尝试读取 key: " + key);
+            System.out.println("[RedisUtil] 读取结果: " + (value == null ? "null" : value));
+            
+            // 如果没找到，列出所有 login:code:* 的 key
+            if (value == null) {
+                System.out.println("[RedisUtil] 未找到指定key，查找所有 login:code:* ...");
+                Set<String> keys = jedis.keys("login:code:*");
+                System.out.println("[RedisUtil] 找到的keys: " + keys);
+                
+                // 尝试读取第一个匹配的key
+                if (keys != null && !keys.isEmpty()) {
+                    for (String k : keys) {
+                        String v = jedis.get(k);
+                        System.out.println("[RedisUtil]   " + k + " = " + v);
+                    }
+                }
+            }
+            
+            return value;
+        } catch (Exception e) {
+            System.err.println("[RedisUtil] 读取验证码异常: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -98,6 +124,19 @@ public class RedisUtil {
     public static void setSeckillStock(Long voucherId, int stock) {
         try (Jedis jedis = getJedis()) {
             jedis.set("seckill:stock:" + voucherId, String.valueOf(stock));
+        }
+    }
+
+    /**
+     * 测试Redis连接
+     */
+    public static boolean testConnection() {
+        try (Jedis jedis = getJedis()) {
+            String pong = jedis.ping();
+            return "PONG".equals(pong);
+        } catch (Exception e) {
+            System.err.println("Redis连接失败: " + e.getMessage());
+            return false;
         }
     }
 

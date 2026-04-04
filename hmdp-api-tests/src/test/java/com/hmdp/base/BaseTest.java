@@ -1,5 +1,6 @@
 package com.hmdp.base;
 
+import com.hmdp.utils.RedisUtil;
 import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.config.RestAssuredConfig;
@@ -40,12 +41,25 @@ public abstract class BaseTest {
                 .setParam("http.socket.timeout", 10000));
         
         RestAssured.baseURI = GATEWAY_URL;
+        
+        // 测试Redis连接
+        System.out.println("========== 环境检查 ==========");
+        boolean redisConnected = RedisUtil.testConnection();
+        System.out.println("Redis连接状态: " + (redisConnected ? "✓ 正常" : "✗ 失败"));
+        if (!redisConnected) {
+            System.err.println("警告: Redis连接失败，请检查:");
+            System.err.println("  1. Redis服务是否启动");
+            System.err.println("  2. Redis地址是否正确 (42.193.185.40:6379)");
+            System.err.println("  3. 防火墙是否允许连接");
+        }
+        System.out.println("网关地址: " + GATEWAY_URL);
+        System.out.println("=============================");
     }
 
     /**
      * 登录并获取Token
      */
-    protected String loginAndGetToken(String phone, String code) {
+    protected static String loginAndGetToken(String phone, String code) {
         Response response = given()
             .contentType("application/json")
             .body("{\"phone\":\"" + phone + "\",\"code\":\"" + code + "\"}")
@@ -62,7 +76,7 @@ public abstract class BaseTest {
     /**
      * 发送验证码
      */
-    protected void sendCode(String phone) {
+    protected static void sendCode(String phone) {
         given()
             .queryParam("phone", phone)
         .when()
@@ -74,7 +88,7 @@ public abstract class BaseTest {
     /**
      * 获取当前登录用户
      */
-    protected Response getCurrentUser(String token) {
+    protected static Response getCurrentUser(String token) {
         return given()
             .header("Authorization", "Bearer " + token)
         .when()
