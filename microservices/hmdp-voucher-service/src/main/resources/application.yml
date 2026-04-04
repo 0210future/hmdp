@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: hmdp-user-service
+    name: hmdp-voucher-service
   cloud:
     nacos:
       discovery:
@@ -15,7 +15,14 @@ spring:
     username: root
     password: 2015784174
     hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
       initialization-fail-timeout: -1
+      leak-detection-threshold: 60000
   redis:
     host: 127.0.0.1
     port: 6379

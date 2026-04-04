@@ -15,7 +15,22 @@ spring:
     username: root
     password: 2015784174
     hikari:
+      # 连接池最大连接数（根据并发量调整，默认10）
+      maximum-pool-size: 20
+      # 最小空闲连接数
+      minimum-idle: 5
+      # 连接超时时间（毫秒）
+      connection-timeout: 30000
+      # 空闲连接最大存活时间（毫秒）
+      idle-timeout: 600000
+      # 连接最大生命周期（毫秒）
+      max-lifetime: 1800000
+      # 连接测试查询
+      connection-test-query: SELECT 1
+      # 初始化失败超时（-1表示不超时）
       initialization-fail-timeout: -1
+      # 连接泄漏检测阈值（毫秒，0表示禁用）
+      leak-detection-threshold: 60000
   redis:
     host: 127.0.0.1
     port: 6379

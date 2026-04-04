@@ -25,17 +25,30 @@ import java.util.regex.Pattern;
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     private static final List<String> WHITE_PATH_PREFIX = Arrays.asList(
-            "/user/code",
-            "/user/login",
-            "/user/logout",
-            "/user/info/",
-            "/shop/",
-            "/shop-type/",
-            "/blog/hot",
-            "/blog/of/user",
-            "/blog/likes/",
-            "/blog-comments/of/blog",
-            "/voucher/list/"
+            // 用户服务 - 公开接口
+            "/user/code",           // 发送验证码
+            "/user/login",          // 登录
+            "/user/logout",         // 登出
+            "/user/info/",          // 查询用户信息
+            
+            // 商户服务 - 公开接口
+            "/shop/",               // 商户详情 /shop/{id}
+            "/shop-type/",          // 商户类型 /shop-type/list
+            "/shop/of/type",        // 根据类型查询商户
+            "/shop/name/",          // 根据名称搜索商户
+            
+            // 博客服务 - 公开接口
+            "/blog/hot",            // 热门博客
+            "/blog/of/user",        // 用户的博客
+            "/blog/likes/",         // 博客点赞列表
+            "/blog/",               // 博客详情 /blog/{id}
+            
+            // 博客评论 - 公开接口
+            "/blog-comments/of/blog",  // 博客评论列表
+            
+            // 优惠券服务 - 公开接口
+            "/voucher/list/",       // 优惠券列表 /voucher/list/{shopId}
+            "/voucher/"             // 优惠券详情 /voucher/{id}
     );
 
     private static final Pattern BLOG_DETAIL_PATTERN = Pattern.compile("^/blog/\\d+$");
@@ -99,14 +112,26 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isWhitePath(String path) {
+        // 1. 博客详情路径匹配 /blog/{id}
         if (BLOG_DETAIL_PATTERN.matcher(path).matches()) {
             return true;
         }
+        
+        // 2. 精确匹配或前缀匹配
         for (String prefix : WHITE_PATH_PREFIX) {
-            if (path.startsWith(prefix)) {
-                return true;
+            // 如果白名单项以 / 结尾，使用前缀匹配
+            if (prefix.endsWith("/")) {
+                if (path.startsWith(prefix)) {
+                    return true;
+                }
+            } else {
+                // 否则使用精确匹配或前缀匹配
+                if (path.equals(prefix) || path.startsWith(prefix + "/") || path.startsWith(prefix + "?")) {
+                    return true;
+                }
             }
         }
+        
         return false;
     }
 

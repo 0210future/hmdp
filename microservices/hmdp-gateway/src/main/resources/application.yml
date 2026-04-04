@@ -14,11 +14,93 @@ spring:
       config:
         enabled: false
     gateway:
+      # 注意：跨域配置已在 CorsConfig.java 中通过代码方式配置
+      # 如需使用配置文件方式，请注释掉 CorsConfig.java 并取消下面注释
+      # globalcors:
+      #   cors-configurations:
+      #     '[/**]':
+      #       allowedOriginPatterns: "*"
+      #       allowedMethods:
+      #         - GET
+      #         - POST
+      #         - PUT
+      #         - DELETE
+      #         - OPTIONS
+      #       allowedHeaders: "*"
+      #       allowCredentials: true
+      #       maxAge: 3600
       routes:
-        - id: user
+        # 用户服务
+        - id: user-service
           uri: http://127.0.0.1:8082
           predicates:
             - Path=/user/**
+          filters:
+            - StripPrefix=0
+        
+        # 商户服务 - 商户详情
+        - id: shop-detail
+          uri: http://127.0.0.1:8083
+          predicates:
+            - Path=/shop/**
+          filters:
+            - StripPrefix=0
+        
+        # 商户服务 - 商户类型
+        - id: shop-type
+          uri: http://127.0.0.1:8083
+          predicates:
+            - Path=/shop-type/**
+          filters:
+            - StripPrefix=0
+        
+        # 博客服务
+        - id: blog-service
+          uri: http://127.0.0.1:8084
+          predicates:
+            - Path=/blog/**
+          filters:
+            - StripPrefix=0
+        
+        # 关注服务
+        - id: follow-service
+          uri: http://127.0.0.1:8085
+          predicates:
+            - Path=/follow/**
+          filters:
+            - StripPrefix=0
+        
+        # 优惠券服务 - 优惠券
+        - id: voucher
+          uri: http://127.0.0.1:8086
+          predicates:
+            - Path=/voucher/**
+          filters:
+            - StripPrefix=0
+        
+        # 优惠券服务 - 订单
+        - id: voucher-order
+          uri: http://127.0.0.1:8086
+          predicates:
+            - Path=/voucher-order/**
+          filters:
+            - StripPrefix=0
+        
+        # 优惠券服务 - 秒杀
+        - id: seckill
+          uri: http://127.0.0.1:8086
+          predicates:
+            - Path=/seckill/**
+          filters:
+            - StripPrefix=0
+        
+        # 订单服务
+        - id: order-service
+          uri: http://127.0.0.1:8087
+          predicates:
+            - Path=/order/**
+          filters:
+            - StripPrefix=0
   redis:
     host: 127.0.0.1
     port: 6379
