@@ -1,12 +1,16 @@
 package com.hmdp.controller;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.hmdp.client.AiClient;
 import com.hmdp.client.FollowClient;
 import com.hmdp.client.UserClient;
 import com.hmdp.dto.Result;
 import com.hmdp.dto.ScrollResult;
 import com.hmdp.dto.UserDTO;
+import com.hmdp.dto.ai.AiModerationCheckRequest;
+import com.hmdp.dto.ai.AiModerationCheckResponse;
 import com.hmdp.entity.Blog;
 import com.hmdp.service.IBlogService;
 import com.hmdp.utils.UserHolder;
@@ -32,6 +36,8 @@ import static com.hmdp.utils.SystemConstants.MAX_PAGE_SIZE;
 @RequestMapping("/blog")
 public class BlogController {
 
+    private static final String BLOG_PENDING_KEY_PREFIX = "ai:moderation:blog:";
+
     @Resource
     private IBlogService blogService;
 
@@ -42,6 +48,9 @@ public class BlogController {
     private FollowClient followClient;
 
     @Resource
+    private AiClient aiClient;
+
+    @Resource
     private StringRedisTemplate stringRedisTemplate;
 
     @PostMapping
@@ -50,19 +59,23 @@ public class BlogController {
         if (user == null) {
             return Result.fail("Unauthorized");
         }
+
+        AiModerationCheckResponse moderation = reviewBlogIfPossible(blog);
+        if (isBlocked(moderation)) {
+            return Result.fail("Content blocked: " + moderation.getReason());
+        }
+
         blog.setUserId(user.getId());
         boolean success = blogService.save(blog);
         if (!success) {
             return Result.fail("Create blog failed");
         }
 
-        List<Long> followers = followClient.queryFollowers(user.getId());
-        if (followers != null && !followers.isEmpty()) {
-            long now = System.currentTimeMillis();
-            for (Long followerId : followers) {
-                String key = FEED_KEY + followerId;
-                stringRedisTemplate.opsForZSet().add(key, blog.getId().toString(), now);
-            }
+        boolean pending = isPending(moderation);
+        if (pending) {
+            stringRedisTemplate.opsForValue().set(BLOG_PENDING_KEY_PREFIX + blog.getId(), JSONUtil.toJsonStr(moderation));
+        } else {
+            pushBlogToFollowers(user.getId(), blog.getId());
         }
         return Result.ok(blog.getId());
     }
@@ -72,6 +85,9 @@ public class BlogController {
         Blog blog = blogService.getById(id);
         if (blog == null) {
             return Result.fail("Blog not found");
+        }
+        if (isPendingReview(id) && !canViewPending(blog.getUserId())) {
+            return Result.fail("Blog pending review");
         }
         fillBlogUser(blog);
         fillBlogIsLike(blog);
@@ -116,12 +132,12 @@ public class BlogController {
         if (users == null) {
             users = Collections.emptyList();
         }
-        Map<Long, UserDTO> dtoMap = new HashMap<>(users.size());
+        Map<Long, UserDTO> dtoMap = new HashMap<Long, UserDTO>(users.size());
         for (UserDTO user : users) {
             dtoMap.put(user.getId(), user);
         }
 
-        List<UserDTO> result = new ArrayList<>(ids.size());
+        List<UserDTO> result = new ArrayList<UserDTO>(ids.size());
         for (Long uid : ids) {
             UserDTO dto = dtoMap.get(uid);
             if (dto != null) {
@@ -138,8 +154,8 @@ public class BlogController {
     ) {
         Page<Blog> page = blogService.query()
                 .eq("user_id", userId)
-                .page(new Page<>(current, MAX_PAGE_SIZE));
-        List<Blog> records = page.getRecords();
+                .page(new Page<Blog>(current, MAX_PAGE_SIZE));
+        List<Blog> records = canViewPending(userId) ? page.getRecords() : filterPendingBlogs(page.getRecords());
         records.forEach(this::fillBlogUser);
         records.forEach(this::fillBlogIsLike);
         return Result.ok(records);
@@ -153,7 +169,7 @@ public class BlogController {
         }
         Page<Blog> page = blogService.query()
                 .eq("user_id", user.getId())
-                .page(new Page<>(current, MAX_PAGE_SIZE));
+                .page(new Page<Blog>(current, MAX_PAGE_SIZE));
 
         List<Blog> records = page.getRecords();
         records.forEach(this::fillBlogUser);
@@ -165,9 +181,9 @@ public class BlogController {
     public Result queryHotBlog(@RequestParam(value = "current", defaultValue = "1") Integer current) {
         Page<Blog> page = blogService.query()
                 .orderByDesc("liked")
-                .page(new Page<>(current, MAX_PAGE_SIZE));
+                .page(new Page<Blog>(current, MAX_PAGE_SIZE));
 
-        List<Blog> records = page.getRecords();
+        List<Blog> records = filterPendingBlogs(page.getRecords());
         records.forEach(this::fillBlogUser);
         records.forEach(this::fillBlogIsLike);
         return Result.ok(records);
@@ -196,7 +212,7 @@ public class BlogController {
             return Result.ok(empty);
         }
 
-        List<Long> ids = new ArrayList<>(typedTuples.size());
+        List<Long> ids = new ArrayList<Long>(typedTuples.size());
         long minTime = 0L;
         int os = 0;
         for (ZSetOperations.TypedTuple<String> tuple : typedTuples) {
@@ -226,6 +242,7 @@ public class BlogController {
                 .in("id", ids)
                 .last("order by field(id," + idStr + ")")
                 .list();
+        blogs = filterPendingBlogs(blogs);
         blogs.forEach(this::fillBlogUser);
         blogs.forEach(this::fillBlogIsLike);
 
@@ -234,6 +251,77 @@ public class BlogController {
         result.setMinTime(minTime);
         result.setOffset(os);
         return Result.ok(result);
+    }
+
+    @PostMapping("/internal/by-shop-ids")
+    public List<Blog> listByShopIds(@RequestBody List<Long> shopIds) {
+        if (shopIds == null || shopIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return filterPendingBlogs(blogService.query().in("shop_id", shopIds).orderByDesc("liked").orderByDesc("create_time").list());
+    }
+
+    @PostMapping("/internal/by-ids")
+    public List<Blog> listByIds(@RequestBody List<Long> blogIds) {
+        if (blogIds == null || blogIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        String idStr = StrUtil.join(",", blogIds);
+        return filterPendingBlogs(blogService.query().in("id", blogIds).last("order by field(id," + idStr + ")").list());
+    }
+
+    @GetMapping("/internal/hot")
+    public List<Blog> listHotInternal(@RequestParam(value = "limit", defaultValue = "20") Integer limit) {
+        int safeLimit = limit == null || limit <= 0 ? 20 : Math.min(limit, 100);
+        return filterPendingBlogs(blogService.query().orderByDesc("liked").last("limit " + safeLimit).list());
+    }
+
+    private void pushBlogToFollowers(Long authorId, Long blogId) {
+        List<Long> followers = followClient.queryFollowers(authorId);
+        if (followers == null || followers.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        for (Long followerId : followers) {
+            String key = FEED_KEY + followerId;
+            stringRedisTemplate.opsForZSet().add(key, blogId.toString(), now);
+        }
+    }
+
+    private AiModerationCheckResponse reviewBlogIfPossible(Blog blog) {
+        try {
+            AiModerationCheckRequest request = new AiModerationCheckRequest();
+            request.setType("blog");
+            request.setImages(blog.getImages());
+            request.setContent(StrUtil.blankToDefault(blog.getTitle(), "") + "\n" + StrUtil.blankToDefault(blog.getContent(), ""));
+            return aiClient.check(request);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private boolean isBlocked(AiModerationCheckResponse moderation) {
+        return moderation != null && "high".equalsIgnoreCase(moderation.getRiskLevel());
+    }
+
+    private boolean isPending(AiModerationCheckResponse moderation) {
+        return moderation != null && "medium".equalsIgnoreCase(moderation.getRiskLevel());
+    }
+
+    private boolean isPendingReview(Long blogId) {
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(BLOG_PENDING_KEY_PREFIX + blogId));
+    }
+
+    private boolean canViewPending(Long authorId) {
+        UserDTO current = UserHolder.getUser();
+        return current != null && authorId != null && authorId.equals(current.getId());
+    }
+
+    private List<Blog> filterPendingBlogs(List<Blog> blogs) {
+        if (blogs == null || blogs.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return blogs.stream().filter(blog -> !isPendingReview(blog.getId())).collect(Collectors.toList());
     }
 
     private void fillBlogUser(Blog blog) {
@@ -256,5 +344,3 @@ public class BlogController {
         blog.setIsLike(score != null);
     }
 }
-
-

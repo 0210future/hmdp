@@ -12,6 +12,7 @@ This directory contains a non-breaking microservice split skeleton. The original
 - `hmdp-follow-service`: follow APIs (uses Feign for user).
 - `hmdp-voucher-service`: voucher + seckill voucher APIs.
 - `hmdp-order-service`: voucher order APIs (uses Feign for voucher).
+- `hmdp-ai-service`: AI search, blog assist, moderation, summary and lightweight rerank APIs.
 
 ## Scope in this phase
 
@@ -60,6 +61,7 @@ You can override defaults in each module `application.yml`.
 6. Start `hmdp-voucher-service`
 7. Start `hmdp-order-service`
 8. Start `hmdp-gateway`
+9. Start `hmdp-ai-service`
 
 If you enable Nacos, start it before the services.
 
@@ -115,6 +117,14 @@ mvn -f microservices/pom.xml clean package -DskipTests
 
 - Order service:
   - `POST /voucher-order/seckill/{id}`
+
+- AI service:
+  - `POST /ai/search`
+  - `POST /ai/blog/assist`
+  - `GET /ai/shop/{shopId}/summary`
+  - `POST /ai/moderation/check`
+  - `POST /ai/feed/rerank`
+  - `POST /ai/voucher/assist`
 
 ## Auth behavior
 

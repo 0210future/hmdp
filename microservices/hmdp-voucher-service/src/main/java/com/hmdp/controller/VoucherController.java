@@ -8,6 +8,7 @@ import com.hmdp.service.IVoucherService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 @RestController
 @RequestMapping("/voucher")
@@ -34,6 +35,11 @@ public class VoucherController {
     @GetMapping("/list/{shopId}")
     public Result queryVoucherOfShop(@PathVariable("shopId") Long shopId) {
        return voucherService.queryVoucherOfShop(shopId);
+    }
+
+    @GetMapping("/internal/shop/{shopId}")
+    public List<Voucher> listVoucherOfShopInternal(@PathVariable("shopId") Long shopId) {
+        return voucherService.query().eq("shop_id", shopId).list();
     }
 
     @GetMapping("/seckill/{id}")

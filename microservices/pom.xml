@@ -25,6 +25,7 @@
         <module>hmdp-follow-service</module>
         <module>hmdp-voucher-service</module>
         <module>hmdp-order-service</module>
+        <module>hmdp-ai-service</module>
     </modules>
 
     <properties>

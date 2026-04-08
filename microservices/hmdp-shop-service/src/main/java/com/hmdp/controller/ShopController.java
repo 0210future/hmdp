@@ -5,7 +5,9 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.Shop;
+import com.hmdp.entity.ShopType;
 import com.hmdp.service.IShopService;
+import com.hmdp.service.IShopTypeService;
 import com.hmdp.utils.SystemConstants;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.Distance;
@@ -38,6 +40,9 @@ public class ShopController {
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private IShopTypeService shopTypeService;
 
     @GetMapping("/{id}")
     public Result queryShopByIdWithMutex(@PathVariable("id") Long id) {
@@ -178,6 +183,21 @@ public class ShopController {
                 .like(StrUtil.isNotBlank(name), "name", name)
                 .page(new Page<>(current, SystemConstants.MAX_PAGE_SIZE));
         return Result.ok(page.getRecords());
+    }
+
+    @GetMapping("/internal/all")
+    public List<Shop> listAll() {
+        return shopService.query().list();
+    }
+
+    @GetMapping("/internal/{id}")
+    public Shop getInternal(@PathVariable("id") Long id) {
+        return shopService.getById(id);
+    }
+
+    @GetMapping("/internal/types")
+    public List<ShopType> listTypes() {
+        return shopTypeService.query().orderByAsc("sort").list();
     }
 
     private void ensureGeoDataLoaded(Long typeId, String key) {

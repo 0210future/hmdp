@@ -101,6 +101,14 @@ spring:
             - Path=/order/**
           filters:
             - StripPrefix=0
+        
+        # AI 鏈嶅姟
+        - id: ai-service
+          uri: http://127.0.0.1:8088
+          predicates:
+            - Path=/ai/**
+          filters:
+            - StripPrefix=0
   redis:
     host: 127.0.0.1
     port: 6379
