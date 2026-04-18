@@ -1,27 +1,37 @@
 ﻿# Apifox Import Files
 
 ## Files
-- hmdp_apifox_cases.postman_collection.json
-- hmdp_apifox_cases.csv
+- hmdp_microservices_apifox_collection.postman_collection.json
+- hmdp_microservices_apifox_environment.postman_environment.json
 
 ## Import Steps (Apifox)
 1. Open Apifox -> Import
 2. Choose Postman Collection
-3. Select hmdp_apifox_cases.postman_collection.json
-4. Keep folder structure to preserve category grouping
+3. Select `hmdp_microservices_apifox_collection.postman_collection.json`
+4. Optional: import `hmdp_microservices_apifox_environment.postman_environment.json` as environment
+5. Keep folder structure to preserve category grouping
 
 ## Categories
-- 01-User-Auth
-- 02-Follow
-- 03-Blog-Feed
-- 04-Comments
-- 05-Shop-GEO
-- 06-ShopType
-- 07-Voucher-Seckill
-- 08-Upload
+- 01 User Auth
+- 02 Shop
+- 03 Blog
+- 04 AI
+- 05 Voucher & Order
 
 ## Variables to configure after import
-- baseUrl (default: http://localhost:8081)
+- baseUrl (default: http://127.0.0.1:8080)
 - token
 - login_code
-- ids and geo coordinates variables in collection variables
+- phone
+- shopId / typeId / voucherId
+- x / y
+
+## Recommended Run Order
+1. Send Code
+2. Login
+3. Current User
+4. Other folders
+
+## Notes
+- AI interfaces currently require `Authorization: Bearer <token>`
+- `Seckill Voucher Order` requires a valid seckill voucher id and a restarted gateway if route config was recently changed

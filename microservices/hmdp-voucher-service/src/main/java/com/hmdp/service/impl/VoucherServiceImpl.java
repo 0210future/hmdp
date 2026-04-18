@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.util.Collections;
 import java.util.List;
 
 import static com.hmdp.utils.RedisConstants.SECKILL_STOCK_KEY;
@@ -54,5 +55,12 @@ public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher> impl
         seckillVoucherService.save(seckillVoucher);
         // 保存秒杀库存到Redis中
         stringRedisTemplate.opsForValue().set(SECKILL_STOCK_KEY+ voucher.getId(), voucher.getStock().toString());
+    }
+    @Override
+    public List<Voucher> queryVoucherByIds(List<Long> voucherIds) {
+        if (voucherIds == null || voucherIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return getBaseMapper().queryVoucherByIds(voucherIds);
     }
 }

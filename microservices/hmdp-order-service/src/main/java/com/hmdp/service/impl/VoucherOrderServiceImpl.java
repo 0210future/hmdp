@@ -1,10 +1,13 @@
 package com.hmdp.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.client.VoucherClient;
 import com.hmdp.dto.Result;
+import com.hmdp.dto.UserVoucherOrderVO;
 import com.hmdp.dto.UserDTO;
+import com.hmdp.dto.VoucherDTO;
 import com.hmdp.entity.SeckillVoucher;
 import com.hmdp.entity.VoucherOrder;
 import com.hmdp.mapper.VoucherOrderMapper;
@@ -27,7 +30,9 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -63,6 +68,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     @PostConstruct
     private void init() {
+        // 消费组和后台线程在服务启动后初始化，避免首单请求再触发懒加载。
         initStreamGroup();
         SECKILL_ORDER_EXECUTOR.submit(new VoucherOrderHandler());
     }
@@ -74,6 +80,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             return Result.fail("Unauthorized");
         }
 
+        // 先做活动时间校验，减少无效请求进入 Lua 脚本和异步下单链路。
         SeckillVoucher voucher = fetchSeckillVoucher(voucherId);
         if (voucher == null) {
             return Result.fail("Voucher not found");
@@ -94,6 +101,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
                 voucherId.toString(), userId.toString(), String.valueOf(orderId)
         );
 
+        // Lua 只负责原子校验库存/一人一单并写入 Stream，真正落库交给后台线程异步完成。
         int r = result == null ? -1 : result.intValue();
         if (r == 1) {
             return Result.fail("Insufficient stock");
@@ -121,11 +129,75 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         return success ? Result.ok(voucherOrder.getId()) : Result.fail("Create order failed");
     }
 
+    @Override
+    public Result queryMyVoucherOrders(Integer current, Integer pageSize, Integer status) {
+        UserDTO user = UserHolder.getUser();
+        if (user == null) {
+            return Result.fail("Unauthorized");
+        }
+
+        // 订单表只保存购买事实，展示页需要额外拼接券信息后再返回前端。
+        int safeCurrent = current == null || current < 1 ? 1 : current;
+        int safePageSize = pageSize == null || pageSize < 1 ? 10 : Math.min(pageSize, 50);
+        Page<VoucherOrder> page = query()
+                .eq("user_id", user.getId())
+                .eq(status != null, "status", status)
+                .orderByDesc("create_time")
+                .page(new Page<VoucherOrder>(safeCurrent, safePageSize));
+
+        List<VoucherOrder> records = page.getRecords();
+        if (records == null || records.isEmpty()) {
+            return Result.ok(Collections.emptyList(), page.getTotal());
+        }
+
+        List<Long> voucherIds = new ArrayList<Long>(records.size());
+        for (VoucherOrder record : records) {
+            voucherIds.add(record.getVoucherId());
+        }
+
+        List<VoucherDTO> vouchers = voucherClient.listByIds(voucherIds);
+        Map<Long, VoucherDTO> voucherMap = new HashMap<Long, VoucherDTO>();
+        if (vouchers != null) {
+            for (VoucherDTO voucher : vouchers) {
+                voucherMap.put(voucher.getId(), voucher);
+            }
+        }
+
+        List<UserVoucherOrderVO> result = new ArrayList<UserVoucherOrderVO>(records.size());
+        for (VoucherOrder record : records) {
+            UserVoucherOrderVO vo = new UserVoucherOrderVO();
+            vo.setOrderId(record.getId());
+            vo.setVoucherId(record.getVoucherId());
+            vo.setPayType(record.getPayType());
+            vo.setStatus(record.getStatus());
+            vo.setCreateTime(record.getCreateTime());
+            vo.setPayTime(record.getPayTime());
+            vo.setUseTime(record.getUseTime());
+            vo.setRefundTime(record.getRefundTime());
+
+            VoucherDTO voucher = voucherMap.get(record.getVoucherId());
+            if (voucher != null) {
+                vo.setShopId(voucher.getShopId());
+                vo.setTitle(voucher.getTitle());
+                vo.setSubTitle(voucher.getSubTitle());
+                vo.setRules(voucher.getRules());
+                vo.setPayValue(voucher.getPayValue());
+                vo.setActualValue(voucher.getActualValue());
+                vo.setType(voucher.getType());
+                vo.setBeginTime(voucher.getBeginTime());
+                vo.setEndTime(voucher.getEndTime());
+            }
+            result.add(vo);
+        }
+        return Result.ok(result, page.getTotal());
+    }
+
     private class VoucherOrderHandler implements Runnable {
         @Override
         public void run() {
             while (true) {
                 try {
+                    // 主流程消费新消息；如果服务重启或处理失败，再回补 pending-list。
                     List<MapRecord<String, Object, Object>> list = stringRedisTemplate.opsForStream().read(
                             Consumer.from(GROUP_NAME, CONSUMER_NAME),
                             StreamReadOptions.empty().count(1).block(Duration.ofSeconds(2)),
@@ -199,6 +271,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             Long userId = voucherOrder.getUserId();
             Long voucherId = voucherOrder.getVoucherId();
 
+            // Redis 已做过一人一单校验，这里再做一次数据库侧兜底，避免重复消费或并发脏写。
             Long count = query().eq("user_id", userId).eq("voucher_id", voucherId).count();
             if (count != null && count > 0) {
                 log.warn("Duplicate order, userId={}, voucherId={}", userId, voucherId);
@@ -236,6 +309,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         try {
             Boolean hasKey = stringRedisTemplate.hasKey(STREAM_ORDERS);
             if (Boolean.FALSE.equals(hasKey)) {
+                // Stream 需要先有键才能建消费组，初始化时写一条占位消息即可。
                 stringRedisTemplate.opsForStream().add(STREAM_ORDERS, Collections.singletonMap("init", "0"));
             }
             stringRedisTemplate.opsForStream().createGroup(STREAM_ORDERS, GROUP_NAME);

@@ -1,13 +1,16 @@
 package com.hmdp.gateway.filter;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.hmdp.utils.JwtUtils;
 import com.hmdp.utils.RedisConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -16,10 +19,12 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.Resource;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
@@ -65,6 +70,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
+        // 白名单接口直接透传，避免在网关层拦截公开查询能力。
         if (isWhitePath(path)) {
             return chain.filter(exchange);
         }
@@ -80,6 +86,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                 return unauthorized(exchange);
             }
 
+            // 网关把用户上下文转成内部请求头，后续微服务无需再次解析 token。
             ServerHttpRequest newRequest = exchange.getRequest()
                     .mutate()
                     .header("X-User-Id", String.valueOf(claims.getOrDefault("id", "")))
@@ -95,6 +102,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             return unauthorized(exchange);
         }
 
+        // Redis 登录态模式下顺便续期，避免活跃用户频繁掉线。
         ServerHttpRequest newRequest = exchange.getRequest()
                 .mutate()
                 .header("X-User-Id", String.valueOf(userMap.getOrDefault("id", "")))
@@ -155,6 +163,15 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     private Mono<Void> unauthorized(ServerWebExchange exchange) {
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-        return exchange.getResponse().setComplete();
+        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        // 统一返回 JSON 错误体，前端可以稳定按统一结构处理未登录场景。
+        Map<String, Object> payload = new HashMap<String, Object>(4);
+        payload.put("success", false);
+        payload.put("errorMsg", "Unauthorized");
+        payload.put("data", null);
+        payload.put("total", null);
+        DataBuffer buffer = exchange.getResponse().bufferFactory()
+                .wrap(JSONUtil.toJsonStr(payload).getBytes(StandardCharsets.UTF_8));
+        return exchange.getResponse().writeWith(Mono.just(buffer));
     }
 }

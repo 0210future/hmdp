@@ -80,7 +80,7 @@ spring:
         
         # 优惠券服务 - 订单
         - id: voucher-order
-          uri: http://127.0.0.1:8086
+          uri: http://127.0.0.1:8087
           predicates:
             - Path=/voucher-order/**
           filters:

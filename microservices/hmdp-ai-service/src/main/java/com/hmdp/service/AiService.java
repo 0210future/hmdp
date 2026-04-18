@@ -76,6 +76,7 @@ public class AiService {
         AiSearchRequest safeRequest = request == null ? new AiSearchRequest() : request;
         List<ShopRecord> shops = safeListShops();
         List<ShopTypeRecord> shopTypes = safeListTypes();
+        // 第一阶段先走“规则解析 + 结构化过滤 + 轻量重排”，保证可解释和稳定落地。
         AiSearchFilter filter = AiIntentParser.parse(safeRequest.getQuery(), shopTypes);
         List<ShopRecord> filtered = new ArrayList<ShopRecord>();
         for (ShopRecord shop : shops) {
@@ -93,6 +94,7 @@ public class AiService {
         Map<Long, List<BlogRecord>> blogMap = groupBlogsByShopIds(filtered.stream().map(ShopRecord::getId).collect(Collectors.toList()));
         List<ScoredShop> scoredShops = new ArrayList<ScoredShop>();
         for (ShopRecord shop : filtered) {
+            // 博客文本不直接做全文检索，而是提炼场景标签参与重排。
             List<String> tags = deriveTags(shop, blogMap.get(shop.getId()));
             double score = calculateSearchScore(shop, tags, filter);
             scoredShops.add(new ScoredShop(shop, typeMap.get(shop.getTypeId()), tags, score, buildShopReason(shop, typeMap.get(shop.getTypeId()), tags, filter)));
@@ -166,6 +168,7 @@ public class AiService {
         if (StrUtil.isNotBlank(cache)) {
             return JSONUtil.toBean(cache, AiShopSummaryResponse.class);
         }
+        // 摘要优先读缓存，避免详情页重复打开时反复聚合博客内容。
         ShopRecord shop = safeGetShop(shopId);
         if (shop == null) {
             return null;
@@ -182,6 +185,7 @@ public class AiService {
 
     public AiFeedRerankResponse rerankFeed(AiFeedRerankRequest request) {
         AiFeedRerankRequest safeRequest = request == null ? new AiFeedRerankRequest() : request;
+        // 当前是轻量实验版排序：热度、距离、场景标签三类信号混排，不依赖训练模型。
         List<BlogRecord> blogs = loadFeedCandidates(safeRequest);
         Map<Long, ShopRecord> shopMap = safeListShops().stream().collect(Collectors.toMap(ShopRecord::getId, item -> item, (a, b) -> a));
         List<String> desiredTags = AiIntentParser.parse(StrUtil.blankToDefault(safeRequest.getQuery(), ""), safeListTypes()).getScenes();
@@ -250,6 +254,7 @@ public class AiService {
             return;
         }
         try {
+            // 启动后异步预热摘要，减少首个详情页请求的等待时间。
             List<ShopRecord> shops = safeListShops();
             Map<Long, List<BlogRecord>> blogMap = groupBlogsByShopIds(shops.stream().map(ShopRecord::getId).collect(Collectors.toList()));
             for (ShopRecord shop : shops) {

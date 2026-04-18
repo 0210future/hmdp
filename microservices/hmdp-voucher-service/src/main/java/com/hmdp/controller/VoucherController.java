@@ -1,6 +1,8 @@
 package com.hmdp.controller;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.hmdp.dto.Result;
+import com.hmdp.dto.VoucherDTO;
 import com.hmdp.entity.SeckillVoucher;
 import com.hmdp.entity.Voucher;
 import com.hmdp.service.ISeckillVoucherService;
@@ -8,6 +10,7 @@ import com.hmdp.service.IVoucherService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -40,6 +43,14 @@ public class VoucherController {
     @GetMapping("/internal/shop/{shopId}")
     public List<Voucher> listVoucherOfShopInternal(@PathVariable("shopId") Long shopId) {
         return voucherService.query().eq("shop_id", shopId).list();
+    }
+
+    @PostMapping("/internal/list")
+    public List<VoucherDTO> listByIdsInternal(@RequestBody List<Long> voucherIds) {
+        if (voucherIds == null || voucherIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return BeanUtil.copyToList(voucherService.queryVoucherByIds(voucherIds), VoucherDTO.class);
     }
 
     @GetMapping("/seckill/{id}")

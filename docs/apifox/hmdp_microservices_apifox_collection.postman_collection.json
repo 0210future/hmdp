@@ -1,0 +1,858 @@
+{
+  "info": {
+    "_postman_id": "a2d16a35-7458-4a20-8eab-2c6f0f7a1801",
+    "name": "HM-DianPing Microservices API Tests",
+    "description": "Import this Postman v2.1 collection into Apifox. Recommended run order: 01 User Auth -> other folders. The login flow will store `login_code` and `token` into variables automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 User Auth",
+      "item": [
+        {
+          "name": "Send Code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('response has success field', function () { pm.expect(json).to.have.property('success'); });",
+                  "if (json && json.data) { pm.collectionVariables.set('login_code', String(json.data)); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/code?phone={{phone}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "code"
+              ],
+              "query": [
+                {
+                  "key": "phone",
+                  "value": "{{phone}}"
+                }
+              ]
+            },
+            "description": "Obtain SMS/login code. This project returns the code directly in development mode."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('login success', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('token exists', function () { pm.expect(json.data).to.be.a('string').and.not.empty; });",
+                  "pm.collectionVariables.set('token', String(json.data));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"code\": \"{{login_code}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Current User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('current user success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Shop",
+      "item": [
+        {
+          "name": "Shop Type List",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('shop type list success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shop-type/list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "shop-type",
+                "list"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Shop List By Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('shop list success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shop/of/type?typeId={{typeId}}&current=1&x={{x}}&y={{y}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "shop",
+                "of",
+                "type"
+              ],
+              "query": [
+                {
+                  "key": "typeId",
+                  "value": "{{typeId}}"
+                },
+                {
+                  "key": "current",
+                  "value": "1"
+                },
+                {
+                  "key": "x",
+                  "value": "{{x}}"
+                },
+                {
+                  "key": "y",
+                  "value": "{{y}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Shop Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('shop detail success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shop/{{shopId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "shop",
+                "{{shopId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Blog",
+      "item": [
+        {
+          "name": "Hot Blogs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('hot blogs success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/blog/hot?current=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "blog",
+                "hot"
+              ],
+              "query": [
+                {
+                  "key": "current",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Blog",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('blog create returns standard result', function () { pm.expect(json).to.have.property('success'); });",
+                  "if (json && json.data) { pm.collectionVariables.set('blogId', String(json.data)); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shopId\": {{shopId}},\n  \"title\": \"Apifox联调测试博客\",\n  \"content\": \"这是一条通过Apifox导入集合发起的测试博客内容。\",\n  \"images\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/blog",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "blog"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 AI",
+      "item": [
+        {
+          "name": "AI Search",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('AI search success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"附近适合约会、人均100以内的餐厅\",\n  \"x\": {{x}},\n  \"y\": {{y}},\n  \"page\": 1,\n  \"pageSize\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "search"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Blog Assist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('AI blog assist success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shopId\": {{shopId}},\n  \"content\": \"环境不错，菜品也比预期稳定。\",\n  \"style\": \"种草\",\n  \"images\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/blog/assist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "blog",
+                "assist"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Shop Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('AI shop summary success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ai/shop/{{shopId}}/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "shop",
+                "{{shopId}}",
+                "summary"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Moderation Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('AI moderation success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"blog\",\n  \"content\": \"这是一条正常的探店文案测试内容\",\n  \"images\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/moderation/check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "moderation",
+                "check"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Feed Rerank",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('AI rerank success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"适合夜宵\",\n  \"x\": {{x}},\n  \"y\": {{y}},\n  \"pageSize\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/feed/rerank",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "feed",
+                "rerank"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Voucher Assist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('AI voucher assist success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shopId\": {{shopId}},\n  \"goal\": \"提升晚市转化\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/voucher/assist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "voucher",
+                "assist"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 Voucher & Order",
+      "item": [
+        {
+          "name": "Voucher List Of Shop",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('voucher list success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/voucher/list/{{shopId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "voucher",
+                "list",
+                "{{shopId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Seckill Voucher Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('seckill detail standard result', function () { pm.expect(json).to.have.property('success'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/voucher/seckill/{{voucherId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "voucher",
+                "seckill",
+                "{{voucherId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Seckill Voucher Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('seckill order returns standard result', function () { pm.expect(json).to.have.property('success'); });",
+                  "if (json && json.success === true && json.data) { pm.collectionVariables.set('orderId', String(json.data)); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/voucher-order/seckill/{{voucherId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "voucher-order",
+                "seckill",
+                "{{voucherId}}"
+              ]
+            },
+            "description": "Requires gateway route `/voucher-order/**` to point to order-service and the selected voucherId to be a valid seckill voucher."
+          },
+          "response": []
+        },
+        {
+          "name": "My Voucher Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('my vouchers success', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/voucher-order/my?current=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "voucher-order",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "current",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8080"
+    },
+    {
+      "key": "phone",
+      "value": "13800138000"
+    },
+    {
+      "key": "login_code",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "shopId",
+      "value": "1"
+    },
+    {
+      "key": "typeId",
+      "value": "1"
+    },
+    {
+      "key": "voucherId",
+      "value": "1"
+    },
+    {
+      "key": "x",
+      "value": "121.4737"
+    },
+    {
+      "key": "y",
+      "value": "31.2304"
+    },
+    {
+      "key": "blogId",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    }
+  ]
+}
