@@ -5,6 +5,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
+/**
+ * 优惠券微服务启动类。
+ */
 @EnableDiscoveryClient
 @MapperScan("com.hmdp.mapper")
 @SpringBootApplication(scanBasePackages = "com.hmdp")

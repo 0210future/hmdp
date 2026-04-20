@@ -36,6 +36,15 @@ spring:
         time-between-eviction-runs: 10s
   jackson:
     default-property-inclusion: non_null
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+      accept-single-value-as-array: true
+      read-date-timestamps-as-nanoseconds: false
+      accept-empty-string-as-null-object: true
 
 mybatis-plus:
   type-aliases-package: com.hmdp.entity

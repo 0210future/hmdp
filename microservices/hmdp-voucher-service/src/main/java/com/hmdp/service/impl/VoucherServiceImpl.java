@@ -18,44 +18,47 @@ import java.util.List;
 import static com.hmdp.utils.RedisConstants.SECKILL_STOCK_KEY;
 
 /**
- * <p>
- *  服务实现类
- * </p>
- *
- * @author 虎哥
- * @since 2021-12-22
+ * 优惠券服务实现，负责普通券和秒杀券的查询与写入。
  */
 @Service
 public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher> implements IVoucherService {
 
     @Resource
     private ISeckillVoucherService seckillVoucherService;
+
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public Result queryVoucherOfShop(Long shopId) {
-        // 查询优惠券信息
+        // 查询商铺下所有处于启用状态的优惠券。
         List<Voucher> vouchers = getBaseMapper().queryVoucherOfShop(shopId);
-        // 返回结果
+        return Result.ok(vouchers);
+    }
+
+    @Override
+    public Result querySeckillVouchersOfShop(Long shopId) {
+        // 仅查询商铺下的秒杀优惠券，并带出库存与秒杀时间窗口。
+        List<Voucher> vouchers = getBaseMapper().querySeckillVouchersOfShop(shopId);
         return Result.ok(vouchers);
     }
 
     @Override
     @Transactional
     public void addSeckillVoucher(Voucher voucher) {
-        // 保存优惠券
+        // 先保存优惠券基本信息。
         save(voucher);
-        // 保存秒杀信息
+        // 再保存秒杀扩展信息。
         SeckillVoucher seckillVoucher = new SeckillVoucher();
         seckillVoucher.setVoucherId(voucher.getId());
         seckillVoucher.setStock(voucher.getStock());
         seckillVoucher.setBeginTime(voucher.getBeginTime());
         seckillVoucher.setEndTime(voucher.getEndTime());
         seckillVoucherService.save(seckillVoucher);
-        // 保存秒杀库存到Redis中
-        stringRedisTemplate.opsForValue().set(SECKILL_STOCK_KEY+ voucher.getId(), voucher.getStock().toString());
+        // 将秒杀库存预热到 Redis，便于后续高并发扣减。
+        stringRedisTemplate.opsForValue().set(SECKILL_STOCK_KEY + voucher.getId(), voucher.getStock().toString());
     }
+
     @Override
     public List<Voucher> queryVoucherByIds(List<Long> voucherIds) {
         if (voucherIds == null || voucherIds.isEmpty()) {
