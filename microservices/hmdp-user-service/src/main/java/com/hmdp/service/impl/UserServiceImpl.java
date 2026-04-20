@@ -24,10 +24,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpSession;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.hmdp.utils.RedisConstants.LOGIN_CODE_KEY;
@@ -69,6 +66,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
      */
     @Override
     public Result sendCode(String phone, HttpSession session) {
+
         // 验证手机号格式是否合法
         if (RegexUtils.isPhoneInvalid(phone)) {
             return Result.fail("Invalid phone number");
