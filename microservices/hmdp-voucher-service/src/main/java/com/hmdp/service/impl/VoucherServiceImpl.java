@@ -58,6 +58,20 @@ public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher> impl
         // 将秒杀库存预热到 Redis，便于后续高并发扣减。
         stringRedisTemplate.opsForValue().set(SECKILL_STOCK_KEY + voucher.getId(), voucher.getStock().toString());
     }
+    // 查询当前时间可用的优惠券
+    @Override
+    public Result queryVouchers() {
+        // 当前时间在优惠券的使用时间范围内
+        List<Voucher> vouchers = getBaseMapper().queryVouchersOfCurrentTime();
+        return Result.ok(vouchers);
+
+    }
+
+    @Override
+    public Result queryAllVouchers() {
+        List<Voucher> vouchers = getBaseMapper().queryAllVouchers();
+        return Result.ok(vouchers);
+    }
 
     @Override
     public List<Voucher> queryVoucherByIds(List<Long> voucherIds) {

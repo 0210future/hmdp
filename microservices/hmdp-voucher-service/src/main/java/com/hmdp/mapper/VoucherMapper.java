@@ -34,4 +34,17 @@ public interface VoucherMapper extends BaseMapper<Voucher> {
      * @return 优惠券列表
      */
     List<Voucher> queryVoucherByIds(@Param("voucherIds") List<Long> voucherIds);
+    /**
+     * 查询当前时间可用的优惠券。
+     *
+     * @return 优惠券列表
+     */
+    List<Voucher> queryVouchersOfCurrentTime();
+
+    /**
+     * 查询所有优惠券，包含普通券和秒杀券。
+     *
+     * @return 优惠券列表
+     */
+    List<Voucher> queryAllVouchers();
 }

@@ -86,6 +86,10 @@ public class ShopController {
 
     @PostMapping
     public Result saveShop(@RequestBody Shop shop) {
+        Result validateResult = validateShopGeo(shop);
+        if (validateResult != null) {
+            return validateResult;
+        }
         shopService.save(shop);
         saveShopGeo(shop);
         return Result.ok(shop.getId());
@@ -96,6 +100,10 @@ public class ShopController {
     public Result updateShop(@RequestBody Shop shop) {
         if (shop.getId() == null) {
             return Result.fail("Shop id is required");
+        }
+        Result validateResult = validateShopGeo(shop);
+        if (validateResult != null) {
+            return validateResult;
         }
 
         Shop oldShop = shopService.getById(shop.getId());
@@ -226,5 +234,26 @@ public class ShopController {
         merged.setX(newShop.getX() != null ? newShop.getX() : oldShop.getX());
         merged.setY(newShop.getY() != null ? newShop.getY() : oldShop.getY());
         return merged;
+    }
+
+    private Result validateShopGeo(Shop shop) {
+        if (shop == null) {
+            return Result.fail("Shop payload is required");
+        }
+        Double x = shop.getX();
+        Double y = shop.getY();
+        if (x == null && y == null) {
+            return null;
+        }
+        if (x == null || y == null) {
+            return Result.fail("Shop coordinates require both longitude(x) and latitude(y)");
+        }
+        if (x < -180 || x > 180) {
+            return Result.fail("Invalid longitude(x): must be between -180 and 180");
+        }
+        if (y < -85.05112878 || y > 85.05112878) {
+            return Result.fail("Invalid latitude(y): must be between -85.05112878 and 85.05112878");
+        }
+        return null;
     }
 }

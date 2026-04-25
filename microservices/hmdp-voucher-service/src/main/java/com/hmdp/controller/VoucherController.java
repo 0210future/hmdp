@@ -61,9 +61,30 @@ public class VoucherController {
      * @param shopId 商铺 ID
      * @return 优惠券列表
      */
-    @GetMapping("/list/{shopId}")
+    @GetMapping("/list/{shopId:\\d+}")
     public Result queryVoucherOfShop(@PathVariable("shopId") Long shopId) {
         return voucherService.queryVoucherOfShop(shopId);
+    }
+
+    /**
+     * 查询所有可用优惠券
+     *
+     * @param
+     * @return 优惠券列表
+     */
+    @GetMapping("/list")
+    public Result queryVouchersOfShop() {
+        return voucherService.queryVouchers();
+    }
+
+    /**
+     * 查询所有优惠券列表，包含普通券和秒杀券。
+     *
+     * @return 优惠券列表
+     */
+    @GetMapping("/all")
+    public Result queryAllVouchers() {
+        return voucherService.queryAllVouchers();
     }
 
     /**
@@ -72,7 +93,7 @@ public class VoucherController {
      * @param shopId 商铺 ID
      * @return 秒杀优惠券列表
      */
-    @GetMapping("/seckill/list/{shopId}")
+    @GetMapping("/seckill/list/{shopId:\\d+}")
     public Result querySeckillVouchersOfShop(@PathVariable("shopId") Long shopId) {
         return voucherService.querySeckillVouchersOfShop(shopId);
     }
@@ -83,7 +104,7 @@ public class VoucherController {
      * @param shopId 商铺 ID
      * @return 优惠券列表
      */
-    @GetMapping("/internal/shop/{shopId}")
+    @GetMapping("/internal/shop/{shopId:\\d+}")
     public List<Voucher> listVoucherOfShopInternal(@PathVariable("shopId") Long shopId) {
         return voucherService.query().eq("shop_id", shopId).list();
     }
@@ -108,7 +129,7 @@ public class VoucherController {
      * @param voucherId 优惠券 ID
      * @return 秒杀优惠券详情
      */
-    @GetMapping("/seckill/{id}")
+    @GetMapping("/seckill/{id:\\d+}")
     public Result querySeckillVoucher(@PathVariable("id") Long voucherId) {
         SeckillVoucher voucher = seckillVoucherService.getById(voucherId);
         return Result.ok(voucher);
@@ -120,7 +141,7 @@ public class VoucherController {
      * @param voucherId 优惠券 ID
      * @return 是否扣减成功
      */
-    @PostMapping("/seckill/{id}/stock/decrease")
+    @PostMapping("/seckill/{id:\\d+}/stock/decrease")
     public Result decreaseSeckillStock(@PathVariable("id") Long voucherId) {
         boolean success = seckillVoucherService.update()
                 .setSql("stock = stock - 1")

@@ -5,7 +5,9 @@
     <select id="queryVoucherOfShop" resultType="com.hmdp.entity.Voucher" parameterType="java.lang.Long">
         SELECT
             v.`id`, v.`shop_id`, v.`title`, v.`sub_title`, v.`rules`, v.`pay_value`,
-            v.`actual_value`, v.`type`, sv.`stock`, sv.`begin_time`, sv.`end_time`
+            v.`actual_value`, v.`type`, sv.`stock`, 
+            sv.`begin_time` AS beginTime, 
+            sv.`end_time` AS endTime
         FROM tb_voucher v
         LEFT JOIN tb_seckill_voucher sv ON v.id = sv.voucher_id
         WHERE v.shop_id = #{shopId} AND v.status = 1
@@ -14,22 +16,49 @@
     <select id="querySeckillVouchersOfShop" resultType="com.hmdp.entity.Voucher" parameterType="java.lang.Long">
         SELECT
             v.`id`, v.`shop_id`, v.`title`, v.`sub_title`, v.`rules`, v.`pay_value`,
-            v.`actual_value`, v.`type`, v.`status`, sv.`stock`, sv.`begin_time`, sv.`end_time`
+            v.`actual_value`, v.`type`, v.`status`, sv.`stock`, 
+            sv.`begin_time` AS beginTime, 
+            sv.`end_time` AS endTime
         FROM tb_voucher v
         INNER JOIN tb_seckill_voucher sv ON v.id = sv.voucher_id
         WHERE v.shop_id = #{shopId} AND v.status = 1
         ORDER BY sv.`begin_time` DESC
     </select>
-
+    
     <select id="queryVoucherByIds" resultType="com.hmdp.entity.Voucher">
         SELECT
             v.`id`, v.`shop_id`, v.`title`, v.`sub_title`, v.`rules`, v.`pay_value`,
-            v.`actual_value`, v.`type`, v.`status`, sv.`stock`, sv.`begin_time`, sv.`end_time`
+            v.`actual_value`, v.`type`, v.`status`, sv.`stock`, 
+            sv.`begin_time` AS beginTime, 
+            sv.`end_time` AS endTime
         FROM tb_voucher v
         LEFT JOIN tb_seckill_voucher sv ON v.id = sv.voucher_id
         WHERE v.id IN
         <foreach collection="voucherIds" item="voucherId" open="(" separator="," close=")">
             #{voucherId}
         </foreach>
+    </select>
+    <select id="queryVouchersOfCurrentTime" resultType="com.hmdp.entity.Voucher">
+        SELECT
+            v.`id`, v.`shop_id`, v.`title`, v.`sub_title`, v.`rules`, v.`pay_value`,
+            v.`actual_value`, v.`type`, v.`status`, sv.`stock`, 
+            sv.`begin_time` AS beginTime, 
+            sv.`end_time` AS endTime
+        FROM tb_voucher v
+        LEFT JOIN tb_seckill_voucher sv ON v.id = sv.voucher_id
+        WHERE v.status = 1 AND sv.begin_time &lt;= NOW() AND sv.end_time &gt;= NOW()
+    </select>
+
+    <select id="queryAllVouchers" resultType="com.hmdp.entity.Voucher">
+        SELECT
+            v.`id`, v.`shop_id`, v.`title`, v.`sub_title`, v.`rules`, v.`pay_value`,
+            v.`actual_value`, v.`type`, v.`status`, sv.`stock`,
+            sv.`begin_time` AS beginTime,
+            sv.`end_time` AS endTime,
+            v.`create_time` AS createTime,
+            v.`update_time` AS updateTime
+        FROM tb_voucher v
+        LEFT JOIN tb_seckill_voucher sv ON v.id = sv.voucher_id
+        ORDER BY v.`update_time` DESC, v.`id` DESC
     </select>
 </mapper>

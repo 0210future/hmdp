@@ -41,4 +41,8 @@ public interface IVoucherService extends IService<Voucher> {
      * @return 优惠券列表
      */
     List<Voucher> queryVoucherByIds(List<Long> voucherIds);
+
+    Result queryVouchers();
+
+    Result queryAllVouchers();
 }
