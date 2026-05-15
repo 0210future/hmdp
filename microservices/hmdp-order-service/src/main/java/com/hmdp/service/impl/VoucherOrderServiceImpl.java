@@ -4,7 +4,9 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.client.VoucherClient;
+import com.hmdp.config.RabbitMQConstants;
 import com.hmdp.dto.Result;
+import com.hmdp.dto.SeckillOrderMessage;
 import com.hmdp.dto.UserVoucherOrderVO;
 import com.hmdp.dto.UserDTO;
 import com.hmdp.dto.VoucherDTO;
@@ -15,38 +17,26 @@ import com.hmdp.service.IVoucherOrderService;
 import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.data.redis.connection.stream.Consumer;
-import org.springframework.data.redis.connection.stream.MapRecord;
-import org.springframework.data.redis.connection.stream.ReadOffset;
-import org.springframework.data.redis.connection.stream.StreamOffset;
-import org.springframework.data.redis.connection.stream.StreamReadOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
 public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> implements IVoucherOrderService {
 
     private static final DefaultRedisScript<Long> SECKILL_SCRIPT;
-    private static final ExecutorService SECKILL_ORDER_EXECUTOR = Executors.newSingleThreadExecutor();
-    private static final String STREAM_ORDERS = "stream.orders";
-    private static final String GROUP_NAME = "g1";
-    private static final String CONSUMER_NAME = "c1";
 
     static {
         SECKILL_SCRIPT = new DefaultRedisScript<>();
@@ -65,13 +55,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     @Resource
     private TransactionTemplate transactionTemplate;
-
-    @PostConstruct
-    private void init() {
-        // 消费组和后台线程在服务启动后初始化，避免首单请求再触发懒加载。
-        initStreamGroup();
-        SECKILL_ORDER_EXECUTOR.submit(new VoucherOrderHandler());
-    }
+    
+    @Resource
+    private RabbitTemplate rabbitTemplate;
 
     @Override
     public Result seckillVoucher(Long voucherId) {
@@ -98,10 +84,10 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         Long result = stringRedisTemplate.execute(
                 SECKILL_SCRIPT,
                 Collections.emptyList(),
-                voucherId.toString(), userId.toString(), String.valueOf(orderId)
+                voucherId.toString(), userId.toString()
         );
 
-        // Lua 只负责原子校验库存/一人一单并写入 Stream，真正落库交给后台线程异步完成。
+        // Lua 只负责原子校验库存/一人一单，真正落库交给 RabbitMQ 异步完成。
         int r = result == null ? -1 : result.intValue();
         if (r == 1) {
             return Result.fail("Insufficient stock");
@@ -112,6 +98,21 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         if (r != 0) {
             return Result.fail("Order request failed");
         }
+        
+        // 发送消息到 RabbitMQ
+        try {
+            SeckillOrderMessage message = new SeckillOrderMessage(orderId, userId, voucherId);
+            rabbitTemplate.convertAndSend(
+                RabbitMQConstants.SECKILL_ORDER_EXCHANGE,
+                RabbitMQConstants.SECKILL_ORDER_ROUTING_KEY,
+                message
+            );
+            log.info("秒杀订单消息发送成功: orderId={}, userId={}, voucherId={}", orderId, userId, voucherId);
+        } catch (Exception e) {
+            log.error("秒杀订单消息发送失败: orderId={}, userId={}, voucherId={}", orderId, userId, voucherId, e);
+            return Result.fail("Order request failed");
+        }
+        
         return Result.ok(orderId);
     }
 
@@ -192,78 +193,11 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         return Result.ok(result, page.getTotal());
     }
 
-    private class VoucherOrderHandler implements Runnable {
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    // 主流程消费新消息；如果服务重启或处理失败，再回补 pending-list。
-                    List<MapRecord<String, Object, Object>> list = stringRedisTemplate.opsForStream().read(
-                            Consumer.from(GROUP_NAME, CONSUMER_NAME),
-                            StreamReadOptions.empty().count(1).block(Duration.ofSeconds(2)),
-                            StreamOffset.create(STREAM_ORDERS, ReadOffset.lastConsumed())
-                    );
-                    if (list == null || list.isEmpty()) {
-                        continue;
-                    }
-
-                    MapRecord<String, Object, Object> record = list.get(0);
-                    VoucherOrder voucherOrder = mapToVoucherOrder(record.getValue());
-                    if (!isValidVoucherOrder(voucherOrder)) {
-                        stringRedisTemplate.opsForStream().acknowledge(STREAM_ORDERS, GROUP_NAME, record.getId());
-                        continue;
-                    }
-                    saveVoucherOrderTx(voucherOrder);
-                    stringRedisTemplate.opsForStream().acknowledge(STREAM_ORDERS, GROUP_NAME, record.getId());
-                } catch (Exception e) {
-                    log.error("Handle stream order failed", e);
-                    handlePendingList();
-                }
-            }
-        }
-    }
-
-    private void handlePendingList() {
-        while (true) {
-            try {
-                List<MapRecord<String, Object, Object>> list = stringRedisTemplate.opsForStream().read(
-                        Consumer.from(GROUP_NAME, CONSUMER_NAME),
-                        StreamReadOptions.empty().count(1),
-                        StreamOffset.create(STREAM_ORDERS, ReadOffset.from("0"))
-                );
-                if (list == null || list.isEmpty()) {
-                    break;
-                }
-
-                MapRecord<String, Object, Object> record = list.get(0);
-                VoucherOrder voucherOrder = mapToVoucherOrder(record.getValue());
-                if (!isValidVoucherOrder(voucherOrder)) {
-                    stringRedisTemplate.opsForStream().acknowledge(STREAM_ORDERS, GROUP_NAME, record.getId());
-                    continue;
-                }
-                saveVoucherOrderTx(voucherOrder);
-                stringRedisTemplate.opsForStream().acknowledge(STREAM_ORDERS, GROUP_NAME, record.getId());
-            } catch (Exception e) {
-                log.error("Handle pending-list failed", e);
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        }
-    }
-
-    private VoucherOrder mapToVoucherOrder(Map<Object, Object> values) {
-        return BeanUtil.fillBeanWithMap(values, new VoucherOrder(), true);
-    }
-
-    private boolean isValidVoucherOrder(VoucherOrder voucherOrder) {
-        return voucherOrder != null
-                && voucherOrder.getId() != null
-                && voucherOrder.getUserId() != null
-                && voucherOrder.getVoucherId() != null;
+    /**
+     * 保存秒杀订单（供 RabbitMQ 消费者调用）
+     */
+    public boolean saveVoucherOrder(VoucherOrder voucherOrder) {
+        return saveVoucherOrderTx(voucherOrder);
     }
 
     private boolean saveVoucherOrderTx(VoucherOrder voucherOrder) {
@@ -303,21 +237,5 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             return BeanUtil.fillBeanWithMap((Map<?, ?>) result.getData(), new SeckillVoucher(), true);
         }
         return null;
-    }
-
-    private void initStreamGroup() {
-        try {
-            Boolean hasKey = stringRedisTemplate.hasKey(STREAM_ORDERS);
-            if (Boolean.FALSE.equals(hasKey)) {
-                // Stream 需要先有键才能建消费组，初始化时写一条占位消息即可。
-                stringRedisTemplate.opsForStream().add(STREAM_ORDERS, Collections.singletonMap("init", "0"));
-            }
-            stringRedisTemplate.opsForStream().createGroup(STREAM_ORDERS, GROUP_NAME);
-        } catch (Exception e) {
-            String message = e.getMessage();
-            if (message == null || !message.contains("BUSYGROUP")) {
-                log.warn("Create stream group skipped: {}", message);
-            }
-        }
     }
 }

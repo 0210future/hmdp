@@ -41,6 +41,28 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+# RabbitMQ 配置
+spring:
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    listener:
+      simple:
+        acknowledge-mode: manual
+        concurrency: 3
+        max-concurrency: 10
+        prefetch: 1
+    template:
+      retry:
+        enabled: true
+        initial-interval: 1000
+        max-attempts: 3
+        max-interval: 10000
+        multiplier: 2
+
 mybatis-plus:
   type-aliases-package: com.hmdp.entity
 

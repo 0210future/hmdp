@@ -11,4 +11,9 @@ public interface IVoucherOrderService extends IService<VoucherOrder> {
     Result createVoucherOrder(Long voucherId);
 
     Result queryMyVoucherOrders(Integer current, Integer pageSize, Integer status);
+    
+    /**
+     * 保存秒杀订单（供 RabbitMQ 消费者调用）
+     */
+    boolean saveVoucherOrder(VoucherOrder voucherOrder);
 }
