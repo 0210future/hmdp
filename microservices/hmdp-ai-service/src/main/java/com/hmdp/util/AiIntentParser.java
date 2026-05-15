@@ -11,6 +11,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * 搜索意图解析器。
+ * 通过规则和同义词表把自然语言转换成结构化筛选条件，供 AI 搜索与重排使用。
+ */
 public final class AiIntentParser {
 
     private static final Pattern PRICE_PATTERN = Pattern.compile("(?:人均|预算|价格|消费)?\\s*(\\d{2,4})\\s*(?:元)?\\s*(?:以内|以下|内)");
@@ -35,6 +39,9 @@ public final class AiIntentParser {
     private AiIntentParser() {
     }
 
+    /**
+     * 从自然语言查询中提取类型、预算、距离、营业时段和场景标签。
+     */
     public static AiSearchFilter parse(String query, List<ShopTypeRecord> shopTypes) {
         String safeQuery = StrUtil.blankToDefault(query, "").trim();
         AiSearchFilter filter = new AiSearchFilter();
@@ -52,6 +59,9 @@ public final class AiIntentParser {
         return filter;
     }
 
+    /**
+     * 去掉无意义口语词，让搜索意图更聚焦。
+     */
     private static String rewriteQuery(String query) {
         if (StrUtil.isBlank(query)) {
             return "附近热门店铺";
@@ -124,6 +134,9 @@ public final class AiIntentParser {
         return scenes;
     }
 
+    /**
+     * 结合店铺类型名和同义词做类型命中。
+     */
     private static ShopTypeRecord matchType(String query, List<ShopTypeRecord> shopTypes) {
         if (shopTypes == null) {
             return null;

@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class AiBlogAssistRequest {
     private Long shopId;
+    private String shopName;
     private String title;
     private String content;
     private String style;

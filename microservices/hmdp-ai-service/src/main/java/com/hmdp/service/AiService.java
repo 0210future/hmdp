@@ -48,6 +48,11 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * AI 核心服务。
+ * 以“规则优先、模型增强兜底”为原则，聚合店铺、博客、优惠券数据，对外提供搜索、
+ * 文案辅助、内容审核、店铺摘要和轻量重排能力。
+ */
 @Slf4j
 @Service
 public class AiService {
@@ -72,6 +77,13 @@ public class AiService {
     @Resource
     private AiProperties aiProperties;
 
+    /**
+     * AI 搜索主流程：
+     * 1. 解析自然语言为结构化筛选条件
+     * 2. 基于规则筛选候选店铺
+     * 3. 综合热度、评分、距离、标签做轻量打分
+     * 4. 生成结果列表和推荐理由
+     */
     public AiSearchResponse search(AiSearchRequest request) {
         AiSearchRequest safeRequest = request == null ? new AiSearchRequest() : request;
         List<ShopRecord> shops = safeListShops();
@@ -138,12 +150,16 @@ public class AiService {
         return response;
     }
 
+    /**
+     * 博客写作辅助：生成标题建议、亮点摘要、标签和润色后的探店文案。
+     */
     public AiBlogAssistResponse assistBlog(AiBlogAssistRequest request) {
         AiBlogAssistRequest safeRequest = request == null ? new AiBlogAssistRequest() : request;
-        ShopRecord shop = safeRequest.getShopId() == null ? null : safeGetShop(safeRequest.getShopId());
+        ShopRecord shop = resolveShopForBlogAssist(safeRequest);
         AiShopSummaryResponse summary = shop == null ? null : getShopSummary(shop.getId());
         List<String> highlights = buildHighlights(shop, summary);
         String rewrittenContent = buildRewrittenContent(shop, summary, safeRequest, highlights);
+        boolean llmEnhanced = false;
         Optional<String> llmRewrite = llmGateway.complete(
                 "你是点评平台的文案助手，请根据真实商户信息润色探店文案。",
                 "商户信息：" + JSONUtil.toJsonStr(shop) + "\n风格：" + StrUtil.blankToDefault(safeRequest.getStyle(), "种草")
@@ -151,17 +167,28 @@ public class AiService {
         );
         if (llmRewrite.isPresent()) {
             rewrittenContent = llmRewrite.get();
+            llmEnhanced = true;
         }
 
+        List<String> titleSuggestions = buildTitleSuggestions(shop, summary);
+        TitleBody rewritten = splitRewrittenContent(rewrittenContent, titleSuggestions);
+
         AiBlogAssistResponse response = new AiBlogAssistResponse();
-        response.setTitleSuggestions(buildTitleSuggestions(shop, summary));
+        response.setTitleSuggestions(titleSuggestions);
+        response.setRewrittenTitle(rewritten.title);
+        response.setRewrittenBody(rewritten.body);
         response.setHighlights(highlights);
         response.setTags(summary == null ? Collections.<String>emptyList() : summary.getTags());
         response.setSummary(summary == null ? buildSummaryText(shop, highlights) : summary.getSummary());
         response.setRewrittenContent(rewrittenContent);
+        response.setLlmEnhanced(llmEnhanced);
+        response.setGenerationMode(llmEnhanced ? "llm" : "local-fallback");
         return response;
     }
 
+    /**
+     * 生成店铺摘要，并优先命中 Redis 缓存。
+     */
     public AiShopSummaryResponse getShopSummary(Long shopId) {
         String cacheKey = SHOP_SUMMARY_KEY_PREFIX + shopId;
         String cache = stringRedisTemplate.opsForValue().get(cacheKey);
@@ -179,10 +206,16 @@ public class AiService {
         return response;
     }
 
+    /**
+     * 内容审核能力，当前由本地规则引擎完成。
+     */
     public AiModerationCheckResponse checkModeration(AiModerationCheckRequest request) {
         return ModerationRuleEngine.check(request);
     }
 
+    /**
+     * 轻量信息流重排：对候选博客按热度、距离和标签命中情况重新排序。
+     */
     public AiFeedRerankResponse rerankFeed(AiFeedRerankRequest request) {
         AiFeedRerankRequest safeRequest = request == null ? new AiFeedRerankRequest() : request;
         // 当前是轻量实验版排序：热度、距离、场景标签三类信号混排，不依赖训练模型。
@@ -231,6 +264,9 @@ public class AiService {
         return response;
     }
 
+    /**
+     * 优惠券辅助：结合店铺定位、摘要标签与现有券模板，生成券文案和规则建议。
+     */
     public AiVoucherAssistResponse assistVoucher(AiVoucherAssistRequest request) {
         AiVoucherAssistRequest safeRequest = request == null ? new AiVoucherAssistRequest() : request;
         ShopRecord shop = safeRequest.getShopId() == null ? null : safeGetShop(safeRequest.getShopId());
@@ -247,6 +283,9 @@ public class AiService {
         return response;
     }
 
+    /**
+     * 应用启动后异步预热店铺摘要缓存，减少首次访问的聚合耗时。
+     */
     @Async("aiExecutor")
     @EventListener(ApplicationReadyEvent.class)
     public void warmupShopSummaries() {
@@ -266,6 +305,9 @@ public class AiService {
         }
     }
 
+    /**
+     * 汇总店铺与博客内容，生成结构化摘要结果。
+     */
     private AiShopSummaryResponse buildShopSummary(ShopRecord shop, List<BlogRecord> blogs) {
         List<String> tags = deriveTags(shop, blogs);
         List<String> audiences = deriveAudiences(tags, shop);
@@ -280,6 +322,9 @@ public class AiService {
         return response;
     }
 
+    /**
+     * 将摘要写入 Redis 缓存。
+     */
     private void cacheShopSummary(AiShopSummaryResponse response) {
         if (response == null || response.getShopId() == null) {
             return;
@@ -287,6 +332,9 @@ public class AiService {
         stringRedisTemplate.opsForValue().set(SHOP_SUMMARY_KEY_PREFIX + response.getShopId(), JSONUtil.toJsonStr(response), aiProperties.getSummary().getTtlMinutes(), TimeUnit.MINUTES);
     }
 
+    /**
+     * 批量拉取店铺对应博客，并按店铺 ID 分组。
+     */
     private Map<Long, List<BlogRecord>> groupBlogsByShopIds(List<Long> shopIds) {
         if (shopIds == null || shopIds.isEmpty()) {
             return Collections.emptyMap();
@@ -303,6 +351,9 @@ public class AiService {
         }
     }
 
+    /**
+     * 加载重排候选集：优先使用传入 blogIds，否则回退到热门博客。
+     */
     private List<BlogRecord> loadFeedCandidates(AiFeedRerankRequest request) {
         try {
             if (CollUtil.isNotEmpty(request.getBlogIds())) {
@@ -317,6 +368,9 @@ public class AiService {
         }
     }
 
+    /**
+     * 生成博客辅助输出中的亮点描述。
+     */
     private List<String> buildHighlights(ShopRecord shop, AiShopSummaryResponse summary) {
         List<String> highlights = new ArrayList<String>();
         if (shop != null) {
@@ -334,6 +388,9 @@ public class AiService {
         return deduplicate(highlights, 5);
     }
 
+    /**
+     * 给博客辅助生成多个标题候选。
+     */
     private List<String> buildTitleSuggestions(ShopRecord shop, AiShopSummaryResponse summary) {
         String shopName = shop == null ? "这家店" : shop.getName();
         String audience = first(summary == null ? null : summary.getAudiences());
@@ -344,6 +401,9 @@ public class AiService {
         ), 3);
     }
 
+    /**
+     * 按用户风格和店铺亮点拼装基础稿，再尝试用 LLM 做润色。
+     */
     private String buildRewrittenContent(ShopRecord shop, AiShopSummaryResponse summary, AiBlogAssistRequest request, List<String> highlights) {
         String style = StrUtil.blankToDefault(request.getStyle(), "种草");
         String original = StrUtil.blankToDefault(request.getContent(), "");
@@ -361,6 +421,62 @@ public class AiService {
         return intro + middle + close;
     }
 
+    /**
+     * 将整段重写文案拆成标题和正文，便于前端分区域展示。
+     * 若模型未按约定返回结构化内容，则使用候选标题兜底。
+     */
+    private TitleBody splitRewrittenContent(String rewrittenContent, List<String> titleSuggestions) {
+        String content = StrUtil.blankToDefault(rewrittenContent, "").trim();
+        String fallbackTitle = first(titleSuggestions);
+        if (StrUtil.isBlank(content)) {
+            return new TitleBody(fallbackTitle, "");
+        }
+
+        String title = null;
+        String body = content;
+
+        int titleMarkerIndex = content.indexOf("【标题】");
+        int bodyMarkerIndex = content.indexOf("【正文】");
+        if (titleMarkerIndex >= 0 && bodyMarkerIndex > titleMarkerIndex) {
+            title = StrUtil.trim(content.substring(titleMarkerIndex + 4, bodyMarkerIndex));
+            body = StrUtil.trim(content.substring(bodyMarkerIndex + 4));
+        } else {
+            List<String> lines = StrUtil.split(content, '\n');
+            if (lines != null && !lines.isEmpty()) {
+                String firstLine = StrUtil.trim(lines.get(0));
+                if (looksLikeTitle(firstLine)) {
+                    title = firstLine;
+                    body = StrUtil.trim(content.substring(content.indexOf(firstLine) + firstLine.length()));
+                }
+            }
+        }
+
+        if (StrUtil.isBlank(title)) {
+            title = fallbackTitle;
+        }
+        if (StrUtil.isBlank(body)) {
+            body = content;
+        }
+        return new TitleBody(title, body);
+    }
+
+    /**
+     * 粗略判断某一行是否更像标题，而不是正文。
+     */
+    private boolean looksLikeTitle(String line) {
+        if (StrUtil.isBlank(line)) {
+            return false;
+        }
+        String candidate = StrUtil.trim(line);
+        return candidate.length() <= 40
+                && !candidate.contains("：")
+                && !candidate.contains("亮点")
+                && !candidate.contains("tips");
+    }
+
+    /**
+     * 当外部模型不可用时，使用规则生成一版摘要文本兜底。
+     */
     private String buildSummaryText(ShopRecord shop, List<String> highlights) {
         if (shop == null) {
             return "这是一条根据现有草稿整理出的探店摘要。";
@@ -368,6 +484,9 @@ public class AiService {
         return shop.getName() + "整体偏向" + String.join("、", highlights.isEmpty() ? Collections.singletonList("真实体验") : highlights) + "。";
     }
 
+    /**
+     * 从店铺类型、营业时间和博客文本中提取搜索/摘要标签。
+     */
     private List<String> deriveTags(ShopRecord shop, List<BlogRecord> blogs) {
         Set<String> tags = new LinkedHashSet<String>();
         String text = buildBlogText(blogs);
@@ -401,6 +520,9 @@ public class AiService {
         return new ArrayList<String>(tags);
     }
 
+    /**
+     * 根据标签推导更适合的人群画像。
+     */
     private List<String> deriveAudiences(List<String> tags, ShopRecord shop) {
         List<String> audiences = new ArrayList<String>();
         if (tags.contains("适合约会")) {
@@ -421,6 +543,9 @@ public class AiService {
         return deduplicate(audiences, 3);
     }
 
+    /**
+     * 输出需要在摘要里提醒用户的潜在注意点。
+     */
     private List<String> deriveWarnings(List<String> tags, ShopRecord shop, List<BlogRecord> blogs) {
         List<String> warnings = new ArrayList<String>();
         if (tags.contains("排队久")) {
@@ -599,6 +724,51 @@ public class AiService {
         }
     }
 
+    /**
+     * 博客助手优先按商铺 ID 定位，若前端只传了商铺名称，则回退到名称匹配。
+     */
+    private ShopRecord resolveShopForBlogAssist(AiBlogAssistRequest request) {
+        if (request == null) {
+            return null;
+        }
+        if (request.getShopId() != null) {
+            return safeGetShop(request.getShopId());
+        }
+        if (StrUtil.isBlank(request.getShopName())) {
+            return null;
+        }
+        return safeFindShopByName(request.getShopName());
+    }
+
+    /**
+     * 按名称查找商铺：
+     * 1. 先做忽略大小写的精确匹配
+     * 2. 再做包含匹配
+     */
+    private ShopRecord safeFindShopByName(String shopName) {
+        try {
+            String keyword = StrUtil.trim(shopName);
+            if (StrUtil.isBlank(keyword)) {
+                return null;
+            }
+            List<ShopRecord> shops = safeListShops();
+            for (ShopRecord shop : shops) {
+                if (shop != null && StrUtil.equalsIgnoreCase(StrUtil.trim(shop.getName()), keyword)) {
+                    return shop;
+                }
+            }
+            for (ShopRecord shop : shops) {
+                if (shop != null && StrUtil.containsIgnoreCase(StrUtil.blankToDefault(shop.getName(), ""), keyword)) {
+                    return shop;
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            log.warn("Load shop by name failed, shopName={}", shopName, e);
+            return null;
+        }
+    }
+
     private boolean matchesType(ShopRecord shop, AiSearchFilter filter) {
         return filter.getTypeId() == null || filter.getTypeId().equals(shop.getTypeId());
     }
@@ -752,6 +922,16 @@ public class AiService {
             this.tags = tags;
             this.score = score;
             this.reason = reason;
+        }
+    }
+
+    private static class TitleBody {
+        private final String title;
+        private final String body;
+
+        private TitleBody(String title, String body) {
+            this.title = title;
+            this.body = body;
         }
     }
 }

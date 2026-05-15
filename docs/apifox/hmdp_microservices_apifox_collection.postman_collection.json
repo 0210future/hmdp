@@ -807,6 +807,205 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "06 Seckill Load Test",
+      "item": [
+        {
+          "name": "Query Seckill Voucher Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('response has success field', function () { pm.expect(json).to.have.property('success'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/voucher/seckill/{{voucherId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "voucher",
+                "seckill",
+                "{{voucherId}}"
+              ]
+            },
+            "description": "Optional warm-up request to verify the selected voucherId is valid."
+          },
+          "response": []
+        },
+        {
+          "name": "Send Code For Dynamic User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const dataPhone = pm.iterationData && pm.iterationData.get ? pm.iterationData.get('phone') : null;",
+                  "const dataVoucherId = pm.iterationData && pm.iterationData.get ? pm.iterationData.get('voucherId') : null;",
+                  "if (dataVoucherId) { pm.collectionVariables.set('voucherId', String(dataVoucherId)); }",
+                  "if (dataPhone) {",
+                  "  pm.collectionVariables.set('phone', String(dataPhone));",
+                  "} else {",
+                  "  const prefix = String(pm.collectionVariables.get('phone_prefix') || '139');",
+                  "  const iteration = pm.info && typeof pm.info.iteration === 'number' ? pm.info.iteration : 0;",
+                  "  const timestampPart = String(Date.now()).slice(-6);",
+                  "  const randomPart = String(Math.floor(Math.random() * 1000)).padStart(3, '0');",
+                  "  const suffix = (String(iteration).padStart(3, '0') + timestampPart + randomPart).slice(-8);",
+                  "  const phone = prefix + suffix;",
+                  "  pm.collectionVariables.set('phone', phone);",
+                  "}",
+                  "pm.collectionVariables.unset('login_code');",
+                  "pm.collectionVariables.unset('token');",
+                  "pm.collectionVariables.unset('orderId');",
+                  "pm.collectionVariables.set('seckill_last_result', 'pending');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('send code success', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('login code exists', function () { pm.expect(json.data).to.exist; });",
+                  "pm.collectionVariables.set('login_code', String(json.data));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/code?phone={{phone}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "code"
+              ],
+              "query": [
+                {
+                  "key": "phone",
+                  "value": "{{phone}}"
+                }
+              ]
+            },
+            "description": "Uses CSV data first. If there is no CSV phone value, a fallback dynamic phone number is generated."
+          },
+          "response": []
+        },
+        {
+          "name": "Login Dynamic User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('login success', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('token exists', function () { pm.expect(json.data).to.be.a('string').and.not.empty; });",
+                  "pm.collectionVariables.set('token', String(json.data));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"code\": \"{{login_code}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Seckill Voucher Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('response has success field', function () { pm.expect(json).to.have.property('success'); });",
+                  "const success = json && json.success === true;",
+                  "const errorMsg = json && json.errorMsg ? String(json.errorMsg) : '';",
+                  "if (success && json.data) { pm.collectionVariables.set('orderId', String(json.data)); pm.collectionVariables.set('seckill_last_result', 'success'); }",
+                  "if (!success && /stock/i.test(errorMsg)) { pm.collectionVariables.set('seckill_last_result', 'insufficient_stock'); }",
+                  "if (!success && /purchased/i.test(errorMsg)) { pm.collectionVariables.set('seckill_last_result', 'duplicate_order'); }",
+                  "if (!success && /not started/i.test(errorMsg)) { pm.collectionVariables.set('seckill_last_result', 'not_started'); }",
+                  "if (!success && /ended/i.test(errorMsg)) { pm.collectionVariables.set('seckill_last_result', 'ended'); }",
+                  "pm.test('result is success or expected business rejection', function () {",
+                  "  pm.expect(success || /stock|purchased|not started|ended|Unauthorized|Voucher not found/i.test(errorMsg)).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/voucher-order/seckill/{{voucherId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "voucher-order",
+                "seckill",
+                "{{voucherId}}"
+              ]
+            },
+            "description": "Use this request inside an Apifox automated/performance scenario together with CSV data for real seckill load testing."
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -852,6 +1051,14 @@
     },
     {
       "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "phone_prefix",
+      "value": "139"
+    },
+    {
+      "key": "seckill_last_result",
       "value": ""
     }
   ]

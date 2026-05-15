@@ -8,6 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+/**
+ * 本地内容审核规则引擎。
+ * 在不依赖外部模型的情况下快速判定导流、辱骂、灌水和低质量内容风险。
+ */
 public final class ModerationRuleEngine {
 
     private static final Pattern PHONE_PATTERN = Pattern.compile("1[3-9]\\d{9}");
@@ -16,6 +20,10 @@ public final class ModerationRuleEngine {
     private ModerationRuleEngine() {
     }
 
+    /**
+     * 按规则返回审核结果。
+     * 高风险内容直接拦截，中风险内容建议人工复核，低风险内容允许通过。
+     */
     public static AiModerationCheckResponse check(AiModerationCheckRequest request) {
         AiModerationCheckResponse response = new AiModerationCheckResponse();
         List<String> labels = new ArrayList<String>();
@@ -50,6 +58,9 @@ public final class ModerationRuleEngine {
         return response;
     }
 
+    /**
+     * 判断内容中是否包含任一风险关键词。
+     */
     private static boolean containsAny(String content, String... words) {
         for (String word : words) {
             if (content.contains(word)) {
@@ -59,6 +70,9 @@ public final class ModerationRuleEngine {
         return false;
     }
 
+    /**
+     * 统一填充审核结果对象。
+     */
     private static void fill(AiModerationCheckResponse response, boolean pass, String riskLevel, List<String> labels, String reason, String action) {
         response.setPass(pass);
         response.setRiskLevel(riskLevel);

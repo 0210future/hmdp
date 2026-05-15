@@ -3,6 +3,9 @@
 ## Files
 - hmdp_microservices_apifox_collection.postman_collection.json
 - hmdp_microservices_apifox_environment.postman_environment.json
+- hmdp_seckill_load_test_environment.postman_environment.json
+- seckill_load_test_data_100.csv
+- SECKILL_APIFOX_CLICK_GUIDE.md
 
 ## Import Steps (Apifox)
 1. Open Apifox -> Import
@@ -17,6 +20,7 @@
 - 03 Blog
 - 04 AI
 - 05 Voucher & Order
+- 06 Seckill Load Test
 
 ## Variables to configure after import
 - baseUrl (default: http://127.0.0.1:8080)
